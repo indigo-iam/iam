@@ -16,6 +16,7 @@
 package it.infn.mw.iam.test.oauth;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -23,14 +24,19 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.time.Clock;
 import java.util.Map;
 import java.util.Set;
 
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -41,6 +47,7 @@ import org.springframework.security.oauth2.provider.TokenRequest;
 import org.springframework.security.oauth2.provider.client.BaseClientDetails;
 import org.springframework.security.oauth2.provider.request.DefaultOAuth2RequestFactory;
 import org.springframework.security.oauth2.provider.token.AuthorizationServerTokenServices;
+import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
@@ -53,8 +60,9 @@ import it.infn.mw.iam.service.aup.AUPSignatureCheckService;
 import it.infn.mw.iam.test.config.ClockConfig;
 
 @SuppressWarnings("deprecation")
+@AutoConfigureMockMvc
 @SpringBootTest(classes = {IamLoginService.class, ClockConfig.class},
-    webEnvironment = WebEnvironment.NONE,
+    webEnvironment = WebEnvironment.MOCK,
     properties = {"iam.login-lockout.enabled=true", "iam.login-lockout.max-failed-attempts=3",
         "iam.login-lockout.observation-window=15m", "iam.login-lockout.lock-duration=30m"})
 class PasswordGrantLockoutTests {
@@ -75,8 +83,12 @@ class PasswordGrantLockoutTests {
   @Autowired
   Clock clock;
 
-  @Test
-  void failedPasswordGrantsSuspendAccountAndPreventTokenIssuance() {
+  @Autowired
+  MockMvc mvc;
+
+  @ParameterizedTest(name = "{0} web failures, remaining failures via password grant")
+  @ValueSource(ints = {0, 2})
+  void failedLoginsSuspendAccountAndPreventTokenIssuance(int webFailures) throws Exception {
     var client = new BaseClientDetails("unit-client", null, "openid", "password", null);
     var clients = mock(ClientDetailsService.class);
     when(clients.loadClientByClientId(client.getClientId())).thenReturn(client);
@@ -91,7 +103,17 @@ class PasswordGrantLockoutTests {
       .executeWithoutResult(status -> lockouts.findByAccountUuid(uuid).ifPresent(lockouts::delete));
     clear.run();
     try {
-      for (int attempt = 0; attempt < 3; attempt++) {
+      for (int attempt = 1; attempt <= webFailures; attempt++) {
+        mvc.perform(post("/login").with(csrf())
+          .param("username", "test")
+          .param("password", "incorrect")
+          .param("submit", "Login"))
+          .andExpect(status().is3xxRedirection());
+        var state = lockouts.findByAccountUuid(uuid).orElseThrow();
+        assertEquals(attempt, state.getFailedAttempts());
+        assertFalse(state.isSuspended(clock.instant()));
+      }
+      for (int attempt = webFailures; attempt < 3; attempt++) {
         assertThrows(InvalidGrantException.class,
             () -> granter.grant("password", request("incorrect")));
       }
@@ -99,7 +121,7 @@ class PasswordGrantLockoutTests {
         .map(row -> row.isSuspended(clock.instant()))
         .orElse(false);
 
-      assertTrue(suspended, "Three rejected grants must suspend the test account");
+      assertTrue(suspended, "Three failed logins must suspend the test account");
       assertEquals("invalid_grant", assertThrows(InvalidGrantException.class,
           () -> granter.grant("password", request("password"))).getOAuth2ErrorCode());
       verify(tokens, never()).createAccessToken(any());
