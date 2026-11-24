@@ -48,7 +48,8 @@
     <button type="button" class="btn btn-success" ng-if="$root.loggedUser.isAdmin || $root.loggedUser.isReader" ng-click="$ctrl.assignOwner()">Assign owner</button>
 
     <div ng-if="!$root.loggedUser.isAdmin && !$root.loggedUser.isReader" class="form-inline" style="margin-top: 5px">
-        <input class="form-control" placeholder="Username" ng-model="$ctrl.newOwnerUsername" ng-keydown="$ctrl.onUsernameKeydown($event)" />
+        <label for="new-owner-username" class="sr-only">Username</label>
+        <input id="new-owner-username" class="form-control" placeholder="Username" ng-model="$ctrl.newOwnerUsername" ng-keydown="$ctrl.onUsernameKeydown($event)" />
         <button type="button" class="btn btn-success" ng-disabled="!$ctrl.newOwnerUsername" ng-click="$ctrl.addOwnerByUsername()">
             Add owner
         </button>
