@@ -59,6 +59,7 @@ import it.infn.mw.iam.api.common.ErrorDTO;
 import it.infn.mw.iam.api.common.ListResponseDTO;
 import it.infn.mw.iam.api.common.PagingUtils;
 import it.infn.mw.iam.api.common.client.RegisteredClientDTO;
+import it.infn.mw.iam.api.common.error.NoSuchAccountError;
 import it.infn.mw.iam.api.scim.model.ScimUser;
 import it.infn.mw.iam.core.oauth.revocation.TokenRevocationService;
 import it.infn.mw.iam.persistence.model.ClientDetailsEntity;
@@ -122,20 +123,29 @@ public class ClientManagementAPIController {
   }
 
   @GetMapping("/{clientId}/owners")
-  @PreAuthorize("#iam.hasScope('iam:admin.read') or #iam.hasDashboardRole('ROLE_ADMIN')")
+  @PreAuthorize("#iam.hasScope('iam:admin.read') or #iam.hasDashboardRole('ROLE_ADMIN') or #iam.isClientOwner(#clientId)")
   public ListResponseDTO<ScimUser> retrieveClientOwners(@PathVariable String clientId,
       @RequestParam final Optional<Integer> count,
       @RequestParam final Optional<Integer> startIndex) {
 
-    return managementService.getClientOwners(clientId, buildPageRequest(count, startIndex));
+    return managementService.getClientOwners(clientId,
+        buildPageRequest(count, startIndex, Sort.by("creationTime", "id")));
   }
 
   @PostMapping("/{clientId}/owners/{accountId}")
   @ResponseStatus(CREATED)
-  @PreAuthorize("#iam.hasScope('iam:admin.write') or #iam.hasDashboardRole('ROLE_ADMIN')")
+  @PreAuthorize("#iam.hasScope('iam:admin.write') or #iam.hasDashboardRole('ROLE_ADMIN') or #iam.isClientOwner(#clientId)")
   public void assignClientOwner(@PathVariable String clientId,
       @PathVariable final String accountId) {
     managementService.assignClientOwner(clientId, accountId);
+  }
+
+  @PostMapping("/{clientId}/owners")
+  @ResponseStatus(CREATED)
+  @PreAuthorize("#iam.hasScope('iam:admin.write') or #iam.hasDashboardRole('ROLE_ADMIN') or #iam.isClientOwner(#clientId)")
+  public void assignClientOwnerByUsername(@PathVariable String clientId,
+      @RequestParam final String username) {
+    managementService.assignClientOwnerByUsername(clientId, username);
   }
 
   @PostMapping("/{clientId}/rat")
@@ -148,7 +158,7 @@ public class ClientManagementAPIController {
 
   @DeleteMapping("/{clientId}/owners/{accountId}")
   @ResponseStatus(NO_CONTENT)
-  @PreAuthorize("#iam.hasScope('iam:admin.write') or #iam.hasDashboardRole('ROLE_ADMIN')")
+  @PreAuthorize("#iam.hasScope('iam:admin.write') or #iam.hasDashboardRole('ROLE_ADMIN') or #iam.isClientOwner(#clientId)")
   public void removeClientOwner(@PathVariable String clientId,
       @PathVariable final String accountId) {
     managementService.removeClientOwner(clientId, accountId);
@@ -229,6 +239,12 @@ public class ClientManagementAPIController {
   @ResponseStatus(value = HttpStatus.BAD_REQUEST)
   @ExceptionHandler(InvalidPaginationRequest.class)
   public ErrorDTO invalidPagination(HttpServletRequest req, Exception ex) {
+    return ErrorDTO.fromString(ex.getMessage());
+  }
+
+  @ResponseStatus(value = HttpStatus.NOT_FOUND)
+  @ExceptionHandler(NoSuchAccountError.class)
+  public ErrorDTO noSuchAccountError(HttpServletRequest req, Exception ex) {
     return ErrorDTO.fromString(ex.getMessage());
   }
 
