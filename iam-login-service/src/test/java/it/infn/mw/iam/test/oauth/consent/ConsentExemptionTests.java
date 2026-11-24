@@ -161,7 +161,7 @@ class ConsentExemptionTests extends EndpointsTestUtils {
     ConsentExemption exemption = getConsentExemptionFor(ADMIN_USERNAME, client.getClientId(),
         Sets.newLinkedHashSet("openid", "profile"));
 
-    exemption = exemptionRepository.save(exemption);
+    exemptionRepository.save(exemption);
 
     clientRepo.delete(client);
 
