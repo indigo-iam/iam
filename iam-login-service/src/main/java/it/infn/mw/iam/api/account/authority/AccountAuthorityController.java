@@ -17,6 +17,8 @@ package it.infn.mw.iam.api.account.authority;
 
 import static java.lang.String.format;
 
+import java.util.Set;
+
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
 
@@ -27,6 +29,7 @@ import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -34,6 +37,7 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
+import it.infn.mw.iam.api.account.AccountManagementService;
 import it.infn.mw.iam.api.common.ErrorDTO;
 import it.infn.mw.iam.api.common.error.NoSuchAccountError;
 import it.infn.mw.iam.persistence.model.IamAccount;
@@ -45,12 +49,19 @@ public class AccountAuthorityController {
 
   public static final String BASE_RESOURCE = "/iam";
 
+  private static final String CAN_MANAGE_ACCOUNT_STATUS =
+      "#iam.hasScope('iam:admin.write') or #iam.hasScope('iam:user.write')"
+          + " or #iam.hasAnyDashboardRole('ROLE_ADMIN', 'ROLE_USER_MANAGER')";
+
   final IamAccountRepository iamAccountRepository;
   final AccountAuthorityService authorityService;
+  final AccountManagementService managementService;
 
-  public AccountAuthorityController(IamAccountRepository iamRepo, AccountAuthorityService aas) {
+  public AccountAuthorityController(IamAccountRepository iamRepo, AccountAuthorityService aas,
+      AccountManagementService managementService) {
     this.iamAccountRepository = iamRepo;
     this.authorityService = aas;
+    this.managementService = managementService;
   }
 
   protected InvalidAuthorityError buildValidationError(BindingResult result) {
@@ -106,6 +117,25 @@ public class AccountAuthorityController {
     }
 
     authorityService.removeAuthorityFromAccount(findAccountById(id), authority.getAuthority());
+  }
+
+  @GetMapping("/account/reserved")
+  @PreAuthorize("#iam.hasScope('iam:admin.read') or #iam.hasScope('iam:user.read')"
+      + " or #iam.hasAnyDashboardRole('ROLE_ADMIN', 'ROLE_USER_MANAGER')")
+  public Set<String> getAccountsReservedToAdministrators() {
+    return managementService.getAccountsReservedToAdministrators();
+  }
+
+  @PatchMapping("/account/{id}/enable")
+  @PreAuthorize(CAN_MANAGE_ACCOUNT_STATUS)
+  public void enableAccount(@PathVariable String id) {
+    managementService.enableAccount(id);
+  }
+
+  @PatchMapping("/account/{id}/disable")
+  @PreAuthorize(CAN_MANAGE_ACCOUNT_STATUS)
+  public void disableAccount(@PathVariable String id) {
+    managementService.disableAccount(id);
   }
 
   @ResponseStatus(value = HttpStatus.BAD_REQUEST)

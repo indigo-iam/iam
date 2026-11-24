@@ -28,7 +28,6 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import it.infn.mw.iam.api.account.authority.AccountAuthorityController;
 import it.infn.mw.iam.api.account.group_manager.AccountGroupManagerController;
-import it.infn.mw.iam.api.account.status.AccountStatusController;
 import it.infn.mw.iam.registration.RegistrationApiController;
 
 /**
@@ -36,9 +35,8 @@ import it.infn.mw.iam.registration.RegistrationApiController;
  * that cannot be acquired, a row removed meanwhile) get a conflict error and can be retried.
  */
 @Order(Ordered.HIGHEST_PRECEDENCE)
-@RestControllerAdvice(assignableTypes = {AccountStatusController.class,
-    AccountAuthorityController.class, AccountGroupManagerController.class,
-    RegistrationApiController.class})
+@RestControllerAdvice(assignableTypes = {AccountAuthorityController.class,
+    AccountGroupManagerController.class, RegistrationApiController.class})
 public class ConcurrentChangeExceptionHandler {
 
   private static final ErrorDTO CONFLICT =
