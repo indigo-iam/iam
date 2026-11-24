@@ -40,6 +40,7 @@ class ScimApiAuthzTests {
   private static final String PRODUCTION_GROUP_ID = "c617d586-54e6-411d-8e38-64967798fa8a";
   private static final String TEST_001_GROUP_ID = "c617d586-54e6-411d-8e38-649677980001";
   private static final String TEST_USER_ID = "80e5fb8d-b7c8-451a-89ba-346ae278a66f";
+  private static final String INVALID_USER_ID = "invalid-uuid";
 
   private static final String GROUP_URI = ScimUtils.getGroupsLocation();
   private static final String USER_URI = ScimUtils.getUsersLocation();
@@ -120,6 +121,15 @@ class ScimApiAuthzTests {
   void testGroupManagerCannotAccessUserInUnmanagedGroup() throws Exception {
 
     mvc.perform(get(USER_URI + "/" + TEST_USER_ID).contentType(SCIM_CONTENT_TYPE))
+      .andExpect(status().isForbidden())
+      .andExpect(jsonPath("$.error", equalTo("access_denied")));
+  }
+
+  @Test
+  @WithMockUser(username = "gm", roles = {"GM:" + PRODUCTION_GROUP_ID})
+  void testIsGroupManagerOfUserReturnsFalseWhenUserDoesNotExist() throws Exception {
+
+    mvc.perform(get(USER_URI + "/" + INVALID_USER_ID).contentType(SCIM_CONTENT_TYPE))
       .andExpect(status().isForbidden())
       .andExpect(jsonPath("$.error", equalTo("access_denied")));
   }
