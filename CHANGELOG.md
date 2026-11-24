@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.15.1 (2026-11-24)
+
+* Rebuild container images with an updated Eclipse Temurin 17 runtime addressing the Java4Shell vulnerability (CVE-2026-114938)
+
 ## 1.15.0 (2026-10-26)
 
 ### What's Added
