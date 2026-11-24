@@ -107,7 +107,7 @@ class CernAccountLifecycleTaskTests {
 
   private ScheduledTaskRegistrar registerExpiration(Optional<CernAccountLifecycleTask> cernTask) {
     TaskConfig config = new TaskConfig(null, null, null, null, lifecycle, expired,
-        null, null, null, cernTask);
+            null, null, null, null, cernTask);
     ScheduledTaskRegistrar registrar = new ScheduledTaskRegistrar();
     config.scheduledExpiredAccountsTask(registrar);
     return registrar;
