@@ -45,6 +45,10 @@
                     return loadClientOwners();
                 }
                 self.clientOwners = res;
+                self.listedBeforePage = false;
+                if (!Utils.isAdmin() && !res.Resources.some(isMe)) {
+                    return findMeBeforePage(1);
+                }
             }).catch(err => {
                 toaster.pop({
                     type: 'error',
@@ -53,14 +57,35 @@
             });
         }
 
+        function isMe(owner) {
+            return Utils.isMe(owner.id);
+        }
+
+        function findMeBeforePage(page) {
+            if (page >= self.currentPage) {
+                return;
+            }
+            var startIndex = (page - 1) * self.itemsPerPage + 1;
+
+            return ClientsService.retrieveClientOwners(self.client.client_id, startIndex, self.itemsPerPage).then(res => {
+                if (res.Resources.some(isMe)) {
+                    self.listedBeforePage = true;
+                    return;
+                }
+                return findMeBeforePage(page + 1);
+            });
+        }
+
+        // Owners are listed by seniority: an owner can remove only the ones listed after them
         function canRemove(user, index) {
             if (Utils.isAdmin()) {
                 return true;
             }
-            if (Utils.isMe(user.id)) {
+            if (isMe(user)) {
                 return self.clientOwners.totalResults > 1;
             }
-            return index > self.clientOwners.Resources.findIndex(o => Utils.isMe(o.id));
+            var mine = self.clientOwners.Resources.findIndex(isMe);
+            return mine < 0 ? !!self.listedBeforePage : index > mine;
         }
 
         function removeOwner(user) {
