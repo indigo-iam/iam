@@ -33,6 +33,10 @@
 * Preserve requested WLCG scope ordering in issued tokens
 * Prevent the use of client_secret_jwt authentication method
 
+## 1.14.5 (2026-11-24)
+
+* Rebuild container images with an updated Eclipse Temurin 17 runtime addressing the Java4Shell vulnerability (CVE-2026-114938)
+
 ## 1.14.4 (2026-09-18)
 
 ### What's Changed
