@@ -48,7 +48,8 @@ public class DashboardConfigService {
       "/devcontainer/api/auth/oauth2/callback/indigo-iam";
   public static final Set<String> DASHBOARD_SCOPES =
       Set.of(SystemScopeService.OPENID_SCOPE, SystemScopeService.OFFLINE_ACCESS_SCOPE, "email",
-          "profile", "iam:admin.read", "iam:admin.write", "scim:read", "scim:write");
+          "profile", "iam:admin.read", "iam:admin.write", "iam:user.read", "iam:user.write",
+          "scim:read", "scim:write");
 
   private final ClientService clientService;
   private final ClientUtils clientUtils;

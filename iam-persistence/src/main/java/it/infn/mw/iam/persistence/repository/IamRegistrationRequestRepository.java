@@ -19,6 +19,9 @@ import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 
+import javax.persistence.LockModeType;
+
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.PagingAndSortingRepository;
 import org.springframework.data.repository.query.Param;
@@ -33,6 +36,10 @@ public interface IamRegistrationRequestRepository
       @Param("status") IamRegistrationRequestStatus status);
 
   Optional<IamRegistrationRequest> findByUuid(@Param("uuid") String uuid);
+
+  @Lock(LockModeType.PESSIMISTIC_WRITE)
+  @Query("select r from IamRegistrationRequest r where r.uuid = :uuid")
+  Optional<IamRegistrationRequest> findByUuidForUpdate(@Param("uuid") String uuid);
 
   @Query("select r from IamRegistrationRequest r join r.account a where a.confirmationKey = :confirmationKey and r.status = it.infn.mw.iam.core.IamRegistrationRequestStatus.NEW")
   Optional<IamRegistrationRequest> findByAccountConfirmationKey(

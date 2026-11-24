@@ -15,6 +15,9 @@
  */
 package it.infn.mw.iam.core.oauth.scope.pdp;
 
+import static it.infn.mw.iam.core.oauth.scope.IamSystemScopeService.USER_READ_SCOPE;
+import static it.infn.mw.iam.core.oauth.scope.IamSystemScopeService.USER_WRITE_SCOPE;
+
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Optional;
@@ -44,6 +47,7 @@ public class DefaultScopeFilter implements ScopeFilter {
   public static final Logger LOG = LoggerFactory.getLogger(DefaultScopeFilter.class);
   public static final Set<String> ADMIN_SCOPES =
       Set.of("iam:admin.read", "iam:admin.write", "scim:read", "scim:write");
+  public static final Set<String> USER_MANAGER_SCOPES = Set.of(USER_READ_SCOPE, USER_WRITE_SCOPE);
   private static final Set<String> EXCLUDED_SCOPES = Set.of("openid");
 
   private final IamProperties config;
@@ -84,7 +88,8 @@ public class DefaultScopeFilter implements ScopeFilter {
     filteredScopes.addAll(requestedScopes);
 
     boolean admin = accountUtils.isAdmin(account);
-    filteredScopes.retainAll(adminPolicies(requestedScopes, admin));
+    boolean userManager = admin || accountUtils.isUserManager(account);
+    filteredScopes.retainAll(adminPolicies(requestedScopes, admin, userManager));
     if (config.getScopeAuthz().isEnabled()) {
 
       Set<String> cleanedRequestedScopes = new HashSet<>(filteredScopes);
@@ -94,7 +99,7 @@ public class DefaultScopeFilter implements ScopeFilter {
       boolean dashboardAdmin = admin && dashboard != null && dashboard.isEnabled()
           && clientId != null && clientId.equals(dashboard.getClientId());
       cleanedRequestedScopes.stream()
-        .filter(scope -> ADMIN_SCOPES.contains(scope)
+        .filter(scope -> ADMIN_SCOPES.contains(scope) || USER_MANAGER_SCOPES.contains(scope)
             || (dashboardAdmin && DashboardConfigService.DASHBOARD_SCOPES.contains(scope)))
         .forEach(filteredScopes::add);
 
@@ -120,7 +125,8 @@ public class DefaultScopeFilter implements ScopeFilter {
   }
 
   private void rejectAdminScopesForPublicClients(Set<String> requestedScopes, String clientId) {
-    if (Collections.disjoint(requestedScopes, ADMIN_SCOPES)) {
+    if (Collections.disjoint(requestedScopes, ADMIN_SCOPES)
+        && Collections.disjoint(requestedScopes, USER_MANAGER_SCOPES)) {
       return;
     }
 
@@ -132,18 +138,21 @@ public class DefaultScopeFilter implements ScopeFilter {
     }
 
     if (ClientAuthMethod.NONE.equals(client.getTokenEndpointAuthMethod())) {
-      throw new InvalidRequestException(
-          "Public clients are not allowed to request iam:admin or scim scopes");
+      throw new InvalidRequestException(Collections.disjoint(requestedScopes, ADMIN_SCOPES)
+          ? "Public clients are not allowed to request iam:user scopes"
+          : "Public clients are not allowed to request iam:admin or scim scopes");
     }
   }
 
-  private Set<String> adminPolicies(Set<String> requestedScopes, boolean admin) {
-    if (!admin) {
-      return requestedScopes.stream()
-        .filter(s -> !ADMIN_SCOPES.contains(s))
-        .collect(Collectors.toSet());
+  private Set<String> adminPolicies(Set<String> requestedScopes, boolean admin,
+      boolean userManager) {
+    if (admin) {
+      return requestedScopes;
     }
-    return requestedScopes;
+    return requestedScopes.stream()
+      .filter(s -> !ADMIN_SCOPES.contains(s))
+      .filter(s -> userManager || !USER_MANAGER_SCOPES.contains(s))
+      .collect(Collectors.toSet());
   }
 
   public AuthenticationHolderEntity filterScopes(AuthenticationHolderEntity authHolder) {

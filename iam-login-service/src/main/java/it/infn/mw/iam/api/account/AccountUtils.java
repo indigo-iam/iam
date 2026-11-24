@@ -35,6 +35,7 @@ import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 public class AccountUtils {
 
   private static final IamAuthority ROLE_ADMIN = new IamAuthority("ROLE_ADMIN");
+  private static final IamAuthority ROLE_USER_MANAGER = new IamAuthority("ROLE_USER_MANAGER");
 
   IamAccountRepository accountRepo;
 
@@ -64,6 +65,28 @@ public class AccountUtils {
     }
 
     return account.getAuthorities().contains(ROLE_ADMIN);
+  }
+
+  public boolean isUserManager(IamAccount account) {
+    if (account == null || account.getAuthorities().isEmpty()) {
+      return false;
+    }
+
+    return account.getAuthorities().contains(ROLE_USER_MANAGER);
+  }
+
+  /**
+   * Sessions and access tokens outlive the roles of the user: this checks the account, which must
+   * be active and still hold the role. Clients acting on their own have no account to check.
+   */
+  public boolean holdsUserManagementRole(Authentication authn) {
+    if (authn instanceof OAuth2Authentication oauth && oauth.getUserAuthentication() == null) {
+      return true;
+    }
+
+    return getAuthenticatedUserAccount(authn).filter(IamAccount::isActive)
+      .filter(a -> isUserManager(a) || isAdmin(a))
+      .isPresent();
   }
 
   public boolean isPreAuthenticated() {

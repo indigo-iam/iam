@@ -72,7 +72,7 @@ public class IamSecurityExpressionMethods {
   }
 
   public enum Role {
-    ROLE_ADMIN, ROLE_GM, ROLE_USER, ROLE_READER
+    ROLE_ADMIN, ROLE_GM, ROLE_USER, ROLE_READER, ROLE_USER_MANAGER
   }
 
   public boolean isGroupManager(String groupUuid) {
@@ -160,6 +160,10 @@ public class IamSecurityExpressionMethods {
 
   public boolean hasAdminOrGMDashboardRoleOfGroup(String gid) {
     return (hasDashboardRole(Role.ROLE_ADMIN) || isGroupManager(gid));
+  }
+
+  public boolean holdsUserManagementRole() {
+    return accountUtils.holdsUserManagementRole(authentication);
   }
 
   public boolean isClientOwner(String clientId) {

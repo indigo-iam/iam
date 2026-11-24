@@ -52,7 +52,7 @@ public class AccountLockoutController {
   }
 
   @GetMapping("/iam/account/{uuid}/lockout")
-  @PreAuthorize("#iam.hasScope('iam:admin.read') or #iam.hasDashboardRole('ROLE_ADMIN')")
+  @PreAuthorize("#iam.hasScope('iam:admin.read') or #iam.hasScope('iam:user.read') or #iam.hasAnyDashboardRole('ROLE_ADMIN', 'ROLE_USER_MANAGER')")
   public ResponseEntity<Map<String, Object>> getLockoutStatus(@PathVariable String uuid)
       throws EntityNotFoundException {
 
@@ -69,7 +69,7 @@ public class AccountLockoutController {
   }
 
   @GetMapping("/iam/account/lockout/suspended")
-  @PreAuthorize("#iam.hasScope('iam:admin.read') or #iam.hasDashboardRole('ROLE_ADMIN')")
+  @PreAuthorize("#iam.hasScope('iam:admin.read') or #iam.hasScope('iam:user.read') or #iam.hasAnyDashboardRole('ROLE_ADMIN', 'ROLE_USER_MANAGER')")
   public ResponseEntity<List<String>> getAllSuspendedUsers() {
     List<String> suspendedUsers = lockoutRepo.findAllSuspendedUsers();
     return ResponseEntity.ok(suspendedUsers);

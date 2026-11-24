@@ -22,7 +22,9 @@ import java.util.stream.Collectors;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.ApplicationEventPublisherAware;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import it.infn.mw.iam.api.common.error.NoSuchAccountError;
 import it.infn.mw.iam.audit.events.account.authority.AuthorityAddedEvent;
 import it.infn.mw.iam.audit.events.account.authority.AuthorityRemovedEvent;
 import it.infn.mw.iam.persistence.model.IamAccount;
@@ -57,20 +59,27 @@ public class DefaultAccountAuthorityService
         () -> new InvalidAuthorityError(String.format("Invalid authority: '%s'", authority)));
   }
 
+  private IamAccount lock(IamAccount account) {
+    return accountRepo.findByUuidForUpdate(account.getUuid())
+      .orElseThrow(() -> NoSuchAccountError.forUuid(account.getUuid()));
+  }
+
   @Override
+  @Transactional
   public void addAuthorityToAccount(IamAccount account, String authority) {
     Objects.requireNonNull(account, ACCOUNT_NOT_NULL_MSG);
 
+    IamAccount lockedAccount = lock(account);
     IamAuthority iamAuthority = findAuthorityFromString(authority);
 
-    if (account.getAuthorities().contains(iamAuthority)) {
+    if (lockedAccount.getAuthorities().contains(iamAuthority)) {
       String msg = String.format("Authority '%s' is already bound to user '%s' (%s)", authority,
           account.getUsername(), account.getUuid());
       throw new AuthorityAlreadyBoundError(msg);
     }
 
-    account.getAuthorities().add(iamAuthority);
-    accountRepo.save(account);
+    lockedAccount.getAuthorities().add(iamAuthority);
+    accountRepo.save(lockedAccount);
 
     final String message =
         String.format("Authority %s was added to user %s.", authority, account.getUsername());
@@ -79,11 +88,13 @@ public class DefaultAccountAuthorityService
   }
 
   @Override
+  @Transactional
   public void removeAuthorityFromAccount(IamAccount account, String authority) {
     Objects.requireNonNull(account, ACCOUNT_NOT_NULL_MSG);
+    IamAccount lockedAccount = lock(account);
     IamAuthority iamAuthority = findAuthorityFromString(authority);
-    account.getAuthorities().remove(iamAuthority);
-    accountRepo.save(account);
+    lockedAccount.getAuthorities().remove(iamAuthority);
+    accountRepo.save(lockedAccount);
 
     final String message =
         String.format("Authority %s was removed from user %s.", authority, account.getUsername());

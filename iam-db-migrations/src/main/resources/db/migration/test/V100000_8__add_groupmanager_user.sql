@@ -8,8 +8,10 @@ INSERT INTO iam_account_group(account_id, group_id) VALUES
   (10,1);
 
 INSERT INTO iam_account_authority(account_id, authority_id) VALUES
-  (10,2),
-  (10,5);
+  (10,2);
+
+INSERT INTO iam_account_authority(account_id, authority_id)
+  SELECT 10, ID FROM iam_authority WHERE AUTH = 'ROLE_GM:c617d586-54e6-411d-8e38-64967798fa8a';
 
 INSERT INTO iam_account_attrs(ACCOUNT_ID, NAME, VAL) VALUES
   (10, 'affiliation', 'INFN-CNAF');
