@@ -56,7 +56,8 @@ import it.infn.mw.iam.persistence.repository.IamConsentExemptionRepository;
 import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
 import it.infn.mw.iam.test.oauth.EndpointsTestUtils;
 
-@SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.MOCK)
+@SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.MOCK,
+    properties = {"iam.issuer=http://localhost:8080/"})
 @AutoConfigureMockMvc
 @Transactional
 class ConsentExemptionTests extends EndpointsTestUtils {
