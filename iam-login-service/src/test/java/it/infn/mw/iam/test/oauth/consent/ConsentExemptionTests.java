@@ -16,6 +16,7 @@
 package it.infn.mw.iam.test.oauth.consent;
 
 import static org.hamcrest.Matchers.equalTo;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.http.MediaType.APPLICATION_FORM_URLENCODED;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
@@ -39,6 +40,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.mock.web.MockHttpSession;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -54,14 +56,16 @@ import it.infn.mw.iam.persistence.repository.IamConsentExemptionRepository;
 import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
 import it.infn.mw.iam.test.oauth.EndpointsTestUtils;
 
-@SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.MOCK,
-    properties = {"iam.issuer=http://localhost:8080/"})
+@SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.MOCK)
 @AutoConfigureMockMvc
 @Transactional
 class ConsentExemptionTests extends EndpointsTestUtils {
 
   @PersistenceContext
   EntityManager entityManager;
+
+  @Autowired
+  JdbcTemplate jdbcTemplate;
 
   @Autowired
   ConsentExemptionService exemptionService;
@@ -175,5 +179,37 @@ class ConsentExemptionTests extends EndpointsTestUtils {
 
     assertTrue(clientRepo.findByClientId(clientId).isEmpty());
     assertTrue(exemptionRepository.findById(exemptionId).isEmpty());
+  }
+
+  @Test
+  void shouldRemoveOrphanedConsentExemptions() {
+
+    Integer orphanedExemptions = jdbcTemplate.queryForObject("""
+        SELECT COUNT(*)
+        FROM whitelisted_site ws
+        WHERE NOT EXISTS (
+            SELECT 1
+            FROM client_details cd
+            WHERE cd.client_id = ws.client_id
+        )
+        """, Integer.class);
+
+    assertEquals(0, orphanedExemptions);
+  }
+
+  @Test
+  void shouldRemoveOrphanedScopes() {
+
+    Integer orphanedScopes = jdbcTemplate.queryForObject("""
+        SELECT COUNT(*)
+        FROM whitelisted_site_scope wss
+        WHERE NOT EXISTS (
+            SELECT 1
+            FROM whitelisted_site ws
+            WHERE ws.id = wss.owner_id
+        )
+        """, Integer.class);
+
+    assertEquals(0, orphanedScopes);
   }
 }
