@@ -41,7 +41,7 @@
         <i class="glyphicon glyphicon-user"></i>
       </span>
       <input id="username" class="form-control" type="text" placeholder="Username" autocomplete="off" spellcheck="false"
-        value="${ login_hint }" name="username">
+        value="<c:out value='${login_hint}'/>" name="username">
     </div>
   </div>
   <div class="form-group">
