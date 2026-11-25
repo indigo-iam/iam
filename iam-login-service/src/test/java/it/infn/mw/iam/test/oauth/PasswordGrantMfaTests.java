@@ -18,6 +18,7 @@ package it.infn.mw.iam.test.oauth;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doReturn;
 
@@ -30,9 +31,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.SpyBean;
+import org.springframework.security.authentication.event.AuthenticationFailureBadCredentialsEvent;
+import org.springframework.security.authentication.event.AuthenticationSuccessEvent;
 import org.springframework.security.oauth2.common.exceptions.InvalidGrantException;
 import org.springframework.security.oauth2.provider.TokenRequest;
 import org.springframework.security.oauth2.provider.password.ResourceOwnerPasswordTokenGranter;
+import org.springframework.test.context.event.ApplicationEvents;
+import org.springframework.test.context.event.RecordApplicationEvents;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
@@ -45,6 +50,7 @@ import it.infn.mw.iam.persistence.repository.IamAccountLoginLockoutRepository;
 import it.infn.mw.iam.test.oauth.scope.StructuredScopeTestSupportConstants;
 
 @SuppressWarnings("deprecation")
+@RecordApplicationEvents
 @SpringBootTest(classes = IamLoginService.class,
     properties = {"iam.login-lockout.enabled=true", "iam.login-lockout.max-failed-attempts=3"})
 class PasswordGrantMfaTests implements StructuredScopeTestSupportConstants {
@@ -52,6 +58,9 @@ class PasswordGrantMfaTests implements StructuredScopeTestSupportConstants {
   @Autowired
   @Qualifier("passwordTokenGranter")
   ResourceOwnerPasswordTokenGranter granter;
+
+  @Autowired
+  ApplicationEvents events;
 
   @Autowired
   IamAccountService accounts;
@@ -85,13 +94,42 @@ class PasswordGrantMfaTests implements StructuredScopeTestSupportConstants {
 
       var request = new TokenRequest(Map.of("username", TEST_USERNAME, "password", TEST_PASSWORD),
           PASSWORD_CLIENT_ID, Set.of("openid"), "password");
+      events.clear();
       var error =
           assertThrows(InvalidGrantException.class, () -> granter.grant("password", request));
 
       assertEquals("invalid_grant", error.getOAuth2ErrorCode());
       assertEquals(1, lockouts.findByAccountUuid(uuid).orElseThrow().getFailedAttempts());
+      assertRejectedAuthenticationEvents();
+
+      var wrongPassword =
+          new TokenRequest(Map.of("username", TEST_USERNAME, "password", "incorrect"),
+              PASSWORD_CLIENT_ID, Set.of("openid"), "password");
+      for (int attempt = 2; attempt <= 3; attempt++) {
+        events.clear();
+        assertThrows(InvalidGrantException.class, () -> granter.grant("password", wrongPassword));
+        assertRejectedAuthenticationEvents();
+      }
+
+      assertTrue(lockouts.findByAccountUuid(uuid).orElseThrow().getFailedAttempts() >= 3);
+      events.clear();
+      assertThrows(InvalidGrantException.class, () -> granter.grant("password", request));
+      assertRejectedAuthenticationEvents();
     } finally {
       clear.run();
     }
+  }
+
+  private void assertRejectedAuthenticationEvents() {
+    assertEquals(0L,
+        events.stream(AuthenticationSuccessEvent.class)
+          .filter(event -> TEST_USERNAME.equals(event.getAuthentication().getName()))
+          .count(),
+        "Rejected password grant must not publish a user authentication success");
+    assertEquals(1L,
+        events.stream(AuthenticationFailureBadCredentialsEvent.class)
+          .filter(event -> TEST_USERNAME.equals(event.getAuthentication().getName()))
+          .count(),
+        "Rejected password grant must publish a user authentication failure");
   }
 }
