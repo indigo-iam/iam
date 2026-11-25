@@ -29,6 +29,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import java.util.Set;
 
+import javax.persistence.EntityManager;
+import javax.persistence.PersistenceContext;
+
 import org.assertj.core.util.Sets;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -56,6 +59,9 @@ import it.infn.mw.iam.test.oauth.EndpointsTestUtils;
 @AutoConfigureMockMvc
 @Transactional
 class ConsentExemptionTests extends EndpointsTestUtils {
+
+  @PersistenceContext
+  EntityManager entityManager;
 
   @Autowired
   ConsentExemptionService exemptionService;
@@ -153,19 +159,21 @@ class ConsentExemptionTests extends EndpointsTestUtils {
     String hashedClientSecret = new IamSha256PasswordEncoder().encode("secret");
     client.setClientSecret(hashedClientSecret);
 
-    clientRepo.save(client);
-    clientRepo.flush();
+    clientRepo.saveAndFlush(client);
 
     String clientId = client.getClientId();
 
     ConsentExemption exemption = getConsentExemptionFor(ADMIN_USERNAME, client.getClientId(),
         Sets.newLinkedHashSet("openid", "profile"));
 
-    exemptionRepository.save(exemption);
+    Long exemptionId = exemptionRepository.saveAndFlush(exemption).getId();
 
     clientRepo.delete(client);
+    clientRepo.flush();
+
+    entityManager.clear();
 
     assertTrue(clientRepo.findByClientId(clientId).isEmpty());
-    assertTrue(exemptionRepository.findByClientId(clientId).isEmpty());
+    assertTrue(exemptionRepository.findById(exemptionId).isEmpty());
   }
 }
