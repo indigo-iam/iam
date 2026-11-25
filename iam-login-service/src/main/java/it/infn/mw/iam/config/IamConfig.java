@@ -20,7 +20,6 @@ import static java.util.Collections.singletonList;
 import java.security.SecureRandom;
 import java.time.Clock;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -48,7 +47,6 @@ import org.springframework.core.env.Environment;
 import org.springframework.core.io.DefaultResourceLoader;
 import org.springframework.security.authentication.AuthenticationEventPublisher;
 import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.ProviderManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -89,6 +87,8 @@ import it.infn.mw.iam.authn.ClientBasicAuthenticationProvider;
 import it.infn.mw.iam.authn.oidc.RestTemplateFactory;
 import it.infn.mw.iam.config.mfa.IamTotpMfaProperties;
 import it.infn.mw.iam.core.IamClientDetailsService;
+import it.infn.mw.iam.core.IamLocalAuthenticationProvider;
+import it.infn.mw.iam.core.oauth.granters.PasswordGrantAuthenticationProvider;
 import it.infn.mw.iam.core.TokenUtils;
 import it.infn.mw.iam.core.client.ClientUserDetailsService;
 import it.infn.mw.iam.core.client.IAMClientUserDetailsService;
@@ -469,14 +469,13 @@ public class IamConfig {
   @Bean(name = "authenticationManager")
   AuthenticationManager authenticationManager(PasswordEncoder passwordEncoder,
       @Qualifier("iamUserDetailsService") UserDetailsService iamUserDetailsService,
-      AuthenticationEventPublisher eventPublisher) {
+      IamProperties properties, IamAccountService accountService, IamTotpMfaService totpService,
+      IamTotpMfaProperties totpProperties, AuthenticationEventPublisher eventPublisher) {
 
-    DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
-    provider.setUserDetailsService(iamUserDetailsService);
-    provider.setPasswordEncoder(passwordEncoder);
-
+    var localProvider = new IamLocalAuthenticationProvider(properties, iamUserDetailsService,
+        passwordEncoder, accountService, totpService, totpProperties);
     ProviderManager pm =
-        new ProviderManager(Collections.<AuthenticationProvider>singletonList(provider));
+        new ProviderManager(List.of(new PasswordGrantAuthenticationProvider(localProvider)));
 
     pm.setAuthenticationEventPublisher(eventPublisher);
     return pm;
