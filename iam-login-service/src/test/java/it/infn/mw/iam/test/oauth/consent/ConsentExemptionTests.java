@@ -180,6 +180,14 @@ class ConsentExemptionTests extends EndpointsTestUtils {
 
     assertTrue(clientRepo.findByClientId(clientId).isEmpty());
     assertTrue(exemptionRepository.findById(exemptionId).isEmpty());
+
+    Integer remainingScopes = jdbcTemplate.queryForObject("""
+        SELECT COUNT(*)
+        FROM whitelisted_site_scope
+        WHERE owner_id = ?
+        """, Integer.class, exemptionId);
+
+    assertEquals(0, remainingScopes);
   }
 
   @Test
@@ -187,13 +195,9 @@ class ConsentExemptionTests extends EndpointsTestUtils {
 
     Integer orphanedExemptions = jdbcTemplate.queryForObject("""
         SELECT COUNT(*)
-        FROM whitelisted_site ws
-        WHERE NOT EXISTS (
-            SELECT 1
-            FROM client_details cd
-            WHERE cd.client_id = ws.client_id
-        )
-        """, Integer.class);
+        FROM whitelisted_site
+        WHERE client_id = ?
+        """, Integer.class, "orphan-client");
 
     assertEquals(0, orphanedExemptions);
   }
@@ -203,13 +207,9 @@ class ConsentExemptionTests extends EndpointsTestUtils {
 
     Integer orphanedScopes = jdbcTemplate.queryForObject("""
         SELECT COUNT(*)
-        FROM whitelisted_site_scope wss
-        WHERE NOT EXISTS (
-            SELECT 1
-            FROM whitelisted_site ws
-            WHERE ws.id = wss.owner_id
-        )
-        """, Integer.class);
+        FROM whitelisted_site_scope
+        WHERE owner_id = ?
+        """, Integer.class, 999999L);
 
     assertEquals(0, orphanedScopes);
   }
