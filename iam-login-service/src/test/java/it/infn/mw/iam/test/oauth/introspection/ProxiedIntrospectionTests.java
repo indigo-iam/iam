@@ -16,6 +16,11 @@
 package it.infn.mw.iam.test.oauth.introspection;
 
 import static org.hamcrest.CoreMatchers.equalTo;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.httpBasic;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -27,6 +32,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -40,7 +46,9 @@ import org.springframework.security.oauth2.server.resource.introspection.OpaqueT
 import org.springframework.web.client.RestClientException;
 
 import it.infn.mw.iam.IamLoginService;
+import it.infn.mw.iam.core.oauth.introspection.model.IntrospectionResponse;
 import it.infn.mw.iam.core.oauth.introspection.model.TokenTypeHint;
+import it.infn.mw.iam.core.oauth.introspection.translation.IamIntrospectionTranslationService;
 import it.infn.mw.iam.test.util.TokenGetterUtils;
 
 @AutoConfigureMockMvc
@@ -50,8 +58,17 @@ class ProxiedIntrospectionTests extends TokenGetterUtils {
   @MockBean
   private OpaqueTokenIntrospector opaqueTokenIntrospector;
 
+  @MockBean
+  private IamIntrospectionTranslationService translationService;
+
   @Autowired
   Clock clock;
+
+  @BeforeEach
+  void setUp() {
+    when(translationService.translate(any(IntrospectionResponse.class), anyString(), anyString()))
+      .thenAnswer(invocation -> invocation.getArgument(0));
+  }
 
   @Test
   void testProxiedIntrospectionWithKnownProvider() throws Exception {
@@ -85,6 +102,9 @@ class ProxiedIntrospectionTests extends TokenGetterUtils {
       .andExpect(jsonPath("$.iss", equalTo(externalIssuer)))
       .andExpect(jsonPath("$.client_id", equalTo(clientId)))
       .andExpect(jsonPath("$.scope", equalTo(scopes)));
+
+    verify(translationService).translate(any(IntrospectionResponse.class), eq(externalIssuer),
+        eq(PROTECTED_RESOURCE_ID));
   }
 
   @Test
@@ -105,4 +125,69 @@ class ProxiedIntrospectionTests extends TokenGetterUtils {
       .andExpect(jsonPath("$.active", equalTo(false)));
   }
 
+  @Test
+  void testTranslationIsNotInvokedWhenUpstreamTokenIsInactive() throws Exception {
+
+    String externalIssuer = "https://einstein.example.com";
+    String clientId = "client-einstein";
+    String scopes = "openid profile email";
+
+    Map<String, Object> attrs = new HashMap<>();
+    attrs.put("active", false);
+
+    OAuth2AuthenticatedPrincipal principal =
+        new DefaultOAuth2AuthenticatedPrincipal(attrs, List.of());
+
+    String token = buildPlainJwt(externalIssuer, "1234", clientId, scopes, clock.instant());
+
+    when(opaqueTokenIntrospector.introspect(token)).thenReturn(principal);
+
+    mvc
+      .perform(post(INTROSPECTION_ENDPOINT)
+        .with(httpBasic(PROTECTED_RESOURCE_ID, PROTECTED_RESOURCE_SECRET))
+        .contentType(MediaType.APPLICATION_FORM_URLENCODED_VALUE)
+        .param("token", token)
+        .param("token_type_hint", TokenTypeHint.ACCESS_TOKEN.name()))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.active", equalTo(false)));
+
+    verify(translationService, never()).translate(any(IntrospectionResponse.class), anyString(),
+        anyString());
+  }
+
+  @Test
+  void testTokenInactiveWhenTranslationFails() throws Exception {
+
+    String externalIssuer = "https://einstein.example.com";
+    String clientId = "client-einstein";
+    String scopes = "openid profile email";
+
+    Map<String, Object> attrs = new HashMap<>();
+    attrs.put("active", true);
+    attrs.put("iss", externalIssuer);
+    attrs.put("client_id", clientId);
+    attrs.put("scope", scopes);
+
+    OAuth2AuthenticatedPrincipal principal =
+        new DefaultOAuth2AuthenticatedPrincipal(attrs, List.of());
+
+    String token = buildPlainJwt(externalIssuer, "1234", clientId, scopes, clock.instant());
+
+    when(opaqueTokenIntrospector.introspect(token)).thenReturn(principal);
+
+    when(translationService.translate(any(IntrospectionResponse.class), eq(externalIssuer),
+        eq(PROTECTED_RESOURCE_ID))).thenReturn(IntrospectionResponse.inactive());
+
+    mvc
+      .perform(post(INTROSPECTION_ENDPOINT)
+        .with(httpBasic(PROTECTED_RESOURCE_ID, PROTECTED_RESOURCE_SECRET))
+        .contentType(MediaType.APPLICATION_FORM_URLENCODED_VALUE)
+        .param("token", token)
+        .param("token_type_hint", TokenTypeHint.ACCESS_TOKEN.name()))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.active", equalTo(false)));
+
+    verify(translationService).translate(any(IntrospectionResponse.class), eq(externalIssuer),
+        eq(PROTECTED_RESOURCE_ID));
+  }
 }

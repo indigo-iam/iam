@@ -39,14 +39,20 @@ public class TranslationEngine {
       TranslationContext context) {
 
     for (TranslationRuleEntity rule : rules) {
-
       TranslationOperationHandler handler = handlers.get(rule.getOperation());
 
       if (handler == null) {
-        throw new TranslationException("Unsupported operation: " + rule.getOperation());
+        throw new TranslationException(
+            "No handler registered for operation: " + rule.getOperation());
       }
 
-      handler.execute(claims, rule, context);
+      try {
+        handler.execute(claims, rule, context);
+      } catch (TranslationException e) {
+        throw e;
+      } catch (Exception e) {
+        throw new TranslationException("Error executing translation rule " + rule.getId(), e);
+      }
     }
   }
 }

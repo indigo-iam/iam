@@ -15,13 +15,15 @@
  */
 package it.infn.mw.iam.core.oauth.introspection.translation;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import it.infn.mw.iam.core.oauth.introspection.model.IntrospectionResponse;
 import it.infn.mw.iam.persistence.model.TranslationRuleEntity;
@@ -35,11 +37,13 @@ public class IamIntrospectionTranslationService {
 
   private final TranslationRuleRepository ruleRepository;
   private final TranslationEngine translationEngine;
+  private final ObjectMapper objectMapper;
 
   public IamIntrospectionTranslationService(TranslationRuleRepository ruleRepository,
-      TranslationEngine translationEngine) {
+      TranslationEngine translationEngine, ObjectMapper objectMapper) {
     this.ruleRepository = ruleRepository;
     this.translationEngine = translationEngine;
+    this.objectMapper = objectMapper;
   }
 
   public IntrospectionResponse translate(IntrospectionResponse response, String issuer,
@@ -53,7 +57,12 @@ public class IamIntrospectionTranslationService {
       List<TranslationRuleEntity> rules =
           ruleRepository.findApplicableRules(issuer, resourceServerId);
 
-      Map<String, Object> claims = new HashMap<>(response.getAdditionalFields());
+      if (rules.isEmpty()) {
+        return response;
+      }
+
+      Map<String, Object> claims = objectMapper.convertValue(response.getAdditionalFields(),
+          new TypeReference<Map<String, Object>>() {});
 
       TranslationContext context = new TranslationContext(issuer, resourceServerId);
 
@@ -61,9 +70,9 @@ public class IamIntrospectionTranslationService {
 
       return IntrospectionResponse.from(true, claims);
 
-    } catch (TranslationException e) {
-      LOG.error("Token introspection translation failed for issuer {} and RS {}: {}", issuer,
-          resourceServerId, e.getMessage(), e);
+    } catch (Exception e) {
+      LOG.error("Token introspection translation failed for issuer {} and RS {}", issuer,
+          resourceServerId, e);
 
       return IntrospectionResponse.inactive();
     }
