@@ -19,12 +19,14 @@ import static it.infn.mw.iam.core.oauth.exchange.TokenExchangePdpResult.Decision
 import static it.infn.mw.iam.core.oauth.exchange.TokenExchangePdpResult.Decision.PERMIT;
 import static java.lang.String.format;
 
+import java.util.Collection;
 import java.util.Set;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.oauth2.client.resource.OAuth2AccessDeniedException;
 import org.springframework.security.oauth2.common.OAuth2AccessToken;
+import org.springframework.security.oauth2.common.exceptions.InvalidClientException;
 import org.springframework.security.oauth2.common.exceptions.InvalidGrantException;
 import org.springframework.security.oauth2.common.exceptions.InvalidRequestException;
 import org.springframework.security.oauth2.common.exceptions.InvalidScopeException;
@@ -216,7 +218,8 @@ public class TokenExchangeTokenGranter extends AbstractTokenGranter {
   private void validateWithPdp(ClientDetailsEntity actor, TokenRequest request,
       String subjectClientId) {
 
-    ClientDetailsEntity subject = (ClientDetailsEntity) clientDetailsService.loadClientByClientId(subjectClientId);
+    ClientDetailsEntity subject =
+        (ClientDetailsEntity) clientDetailsService.loadClientByClientId(subjectClientId);
 
     TokenExchangePdpResult result = exchangePdp.validateTokenExchange(request, subject, actor);
 
@@ -291,4 +294,13 @@ public class TokenExchangeTokenGranter extends AbstractTokenGranter {
       String clientId) {
   }
 
+  @Override
+  protected void validateGrantType(String grantType, ClientDetails clientDetails) {
+
+    Collection<String> authorizedGrantTypes = clientDetails.getAuthorizedGrantTypes();
+    if (authorizedGrantTypes == null || authorizedGrantTypes.isEmpty()
+        || !authorizedGrantTypes.contains(grantType)) {
+      throw new InvalidClientException("Unauthorized grant type");
+    }
+  }
 }
