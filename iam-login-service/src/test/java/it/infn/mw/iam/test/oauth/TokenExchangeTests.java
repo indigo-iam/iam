@@ -37,6 +37,7 @@ import java.text.ParseException;
 import java.util.Date;
 import java.util.Map;
 import java.util.Random;
+import java.util.Set;
 
 import org.json.JSONObject;
 import org.junit.jupiter.api.Test;
@@ -51,9 +52,13 @@ import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.JWTParser;
 
 import it.infn.mw.iam.IamLoginService;
+import it.infn.mw.iam.core.client.IamSha256PasswordEncoder;
 import it.infn.mw.iam.core.oauth.introspection.model.TokenTypeHint;
+import it.infn.mw.iam.persistence.model.ClientAuthMethod;
+import it.infn.mw.iam.persistence.model.ClientDetailsEntity;
 import it.infn.mw.iam.persistence.model.IamAup;
 import it.infn.mw.iam.persistence.repository.IamAupRepository;
+import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
 @SuppressWarnings("deprecation")
@@ -74,6 +79,9 @@ class TokenExchangeTests extends EndpointsTestUtils {
 
   @Autowired
   private IamAupRepository aupRepo;
+
+  @Autowired
+  private IamClientRepository clientRepo;
 
   @Test
   void testImpersonationFlowWithAudience() throws Exception {
@@ -190,8 +198,8 @@ class TokenExchangeTests extends EndpointsTestUtils {
         .param("scope", "read-tasks openid profile"))
       .andExpect(status().isBadRequest())
       .andExpect(jsonPath("$.error", equalTo("invalid_grant")))
-      .andExpect(jsonPath("$.error_description",
-          equalTo("User with uuid " + TEST_UUID + " needs to sign AUP for this organization in order to proceed.")));
+      .andExpect(jsonPath("$.error_description", equalTo("User with uuid " + TEST_UUID
+          + " needs to sign AUP for this organization in order to proceed.")));
   }
 
   @Test
@@ -337,13 +345,13 @@ class TokenExchangeTests extends EndpointsTestUtils {
 
     DefaultOAuth2AccessToken responseToken =
         mapper.readValue(response, DefaultOAuth2AccessToken.class);
-    
-    
+
+
     JWT exchangedToken = JWTParser.parse(responseToken.getValue());
     assertThat(exchangedToken.getJWTClaimsSet().getSubject(), is(TEST_USER_SUB));
-    
+
     Map<String, Object> actClaim = exchangedToken.getJWTClaimsSet().getJSONObjectClaim("act");
-    
+
     assertThat(actClaim, notNullValue());
     assertThat(actClaim.get("sub"), is("token-exchange-actor"));
     assertThat(actClaim.get("act"), nullValue());
@@ -369,11 +377,11 @@ class TokenExchangeTests extends EndpointsTestUtils {
     JWT refreshedTokenJwt = JWTParser.parse(refreshedToken.getValue());
     assertThat(refreshedTokenJwt.getJWTClaimsSet().getSubject(), is(TEST_USER_SUB));
     actClaim = refreshedTokenJwt.getJWTClaimsSet().getJSONObjectClaim("act");
-    
+
     assertThat(actClaim, notNullValue());
     assertThat(actClaim.get("sub"), is("token-exchange-actor"));
     assertThat(actClaim.get("act"), nullValue());
-    
+
     mvc
       .perform(post("/introspect").with(httpBasic("password-grant", "secret"))
         .contentType(APPLICATION_FORM_URLENCODED)
@@ -497,7 +505,6 @@ class TokenExchangeTests extends EndpointsTestUtils {
   @Test
   void testTokenExchangeForbiddenWhenActorClientIsSubjectClient() throws Exception {
 
-
     String clientId = "token-exchange-actor";
     String clientSecret = "secret";
 
@@ -511,7 +518,8 @@ class TokenExchangeTests extends EndpointsTestUtils {
       .getAccessTokenValue();
 
 
-    mvc.perform(post(TOKEN_ENDPOINT).with(httpBasic(clientId, clientSecret))
+    mvc
+      .perform(post(TOKEN_ENDPOINT).with(httpBasic(clientId, clientSecret))
         .param("grant_type", GRANT_TYPE)
         .param("subject_token", accessToken)
         .param("subject_token_type", TOKEN_TYPE)
@@ -573,13 +581,13 @@ class TokenExchangeTests extends EndpointsTestUtils {
 
     DefaultOAuth2AccessToken responseToken =
         mapper.readValue(response, DefaultOAuth2AccessToken.class);
-    
-    
+
+
     JWT exchangedToken = JWTParser.parse(responseToken.getValue());
     assertThat(exchangedToken.getJWTClaimsSet().getSubject(), is(TEST_USER_SUB));
-    
+
     Map<String, Object> actClaim = exchangedToken.getJWTClaimsSet().getJSONObjectClaim("act");
-    
+
     assertThat(actClaim, notNullValue());
     assertThat(actClaim.get("sub"), is("token-exchange-actor"));
     assertThat(actClaim.get("act"), nullValue());
@@ -605,11 +613,11 @@ class TokenExchangeTests extends EndpointsTestUtils {
     JWT refreshedTokenJwt = JWTParser.parse(refreshedToken.getValue());
     assertThat(refreshedTokenJwt.getJWTClaimsSet().getSubject(), is(TEST_USER_SUB));
     actClaim = refreshedTokenJwt.getJWTClaimsSet().getJSONObjectClaim("act");
-    
+
     assertThat(actClaim, notNullValue());
     assertThat(actClaim.get("sub"), is("token-exchange-actor"));
     assertThat(actClaim.get("act"), nullValue());
-    
+
     mvc
       .perform(post("/introspect").with(httpBasic("password-grant", "secret"))
         .contentType(APPLICATION_FORM_URLENCODED)
@@ -617,10 +625,10 @@ class TokenExchangeTests extends EndpointsTestUtils {
         .param("token_type_hint", TokenTypeHint.ACCESS_TOKEN.name()))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.active", equalTo(true)));
-    
-    
+
+
     String secondActorClient = "token-lookup-client";
-    
+
     // @formatter:off
     response = mvc.perform(post(TOKEN_ENDPOINT)
         .with(httpBasic(secondActorClient, "secret"))
@@ -640,7 +648,8 @@ class TokenExchangeTests extends EndpointsTestUtils {
       .getContentAsString();
     // @formatter:on
 
-    DefaultOAuth2AccessToken secondExchangeResponse =  mapper.readValue(response, DefaultOAuth2AccessToken.class);
+    DefaultOAuth2AccessToken secondExchangeResponse =
+        mapper.readValue(response, DefaultOAuth2AccessToken.class);
     JWT secondExchangeJwt = JWTParser.parse(secondExchangeResponse.getValue());
     assertThat(secondExchangeJwt.getJWTClaimsSet().getSubject(), is(TEST_USER_SUB));
     actClaim = secondExchangeJwt.getJWTClaimsSet().getJSONObjectClaim("act");
@@ -692,8 +701,9 @@ class TokenExchangeTests extends EndpointsTestUtils {
       .getResponse()
       .getContentAsString();
     // @formatter:on
-    
-    DefaultOAuth2AccessToken secondExchangeResponse =  mapper.readValue(response, DefaultOAuth2AccessToken.class);
+
+    DefaultOAuth2AccessToken secondExchangeResponse =
+        mapper.readValue(response, DefaultOAuth2AccessToken.class);
     JWT secondExchangeJwt = JWTParser.parse(secondExchangeResponse.getValue());
     assertThat(secondExchangeJwt.getJWTClaimsSet().getSubject(), is(TEST_USER_SUB));
   }
@@ -709,5 +719,42 @@ class TokenExchangeTests extends EndpointsTestUtils {
     }
 
     return stringBuilder.toString();
+  }
+
+  @Test
+  void testTokenExchangeFailsWhenClientHasNoAuthorizedGrantTypes() throws Exception {
+
+    ClientDetailsEntity actorClient = new ClientDetailsEntity();
+    actorClient.setClientId("client-without-grant-type");
+    actorClient.setScope(Set.of("openid"));
+    actorClient.setGrantTypes(Set.of());
+    actorClient.setTokenEndpointAuthMethod(ClientAuthMethod.SECRET_BASIC);
+
+    String hashedClientSecret = new IamSha256PasswordEncoder().encode("secret");
+    actorClient.setClientSecret(hashedClientSecret);
+
+    clientRepo.save(actorClient);
+
+    String clientId = "token-exchange-subject";
+    String clientSecret = "secret";
+
+    String accessToken = new AccessTokenGetter().grantType("password")
+      .clientId(clientId)
+      .clientSecret(clientSecret)
+      .username(TEST_USER_USERNAME)
+      .password(TEST_USER_PASSWORD)
+      .scope("openid profile")
+      .getAccessTokenValue();
+
+    // @formatter:off
+    mvc.perform(post(TOKEN_ENDPOINT)
+        .with(httpBasic(actorClient.getClientId(), "secret"))
+        .param("grant_type", GRANT_TYPE)
+        .param("subject_token", accessToken)
+        .param("subject_token_type", TOKEN_TYPE)
+        .param("scope", "openid"))
+      .andExpect(status().isUnauthorized())
+      .andExpect(jsonPath("$.error", equalTo("invalid_client")))
+      .andExpect(jsonPath("$.error_description", equalTo("Unauthorized grant type")));
   }
 }
