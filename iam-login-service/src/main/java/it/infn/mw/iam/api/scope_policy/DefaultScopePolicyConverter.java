@@ -16,6 +16,7 @@
 package it.infn.mw.iam.api.scope_policy;
 
 import java.util.Set;
+import java.util.TreeSet;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -130,7 +131,7 @@ public class DefaultScopePolicyConverter implements IamScopePolicyConverter {
       actor = new Actor(sp.getGroup().getUuid(), sp.getGroup().getName(), "group");
     }
 
-    Set<String> scopes = Sets.newHashSet();
+    Set<String> scopes = new TreeSet<>();
     if (!sp.getScopes().isEmpty()) {
       scopes.addAll(sp.getScopes());
     }
