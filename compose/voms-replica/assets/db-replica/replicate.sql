@@ -4,6 +4,6 @@ CHANGE REPLICATION SOURCE TO
   SOURCE_USER='replicator',
   SOURCE_PASSWORD='pwd',
   SOURCE_SSL=1,
-  SOURCE_SSL_CA = '/certs-mysql/ca.pem',
+  SOURCE_SSL_CA = '/dbcerts/ca.pem',
   SOURCE_SSL_VERIFY_SERVER_CERT=1;
 START REPLICA;

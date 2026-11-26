@@ -6,7 +6,7 @@ volumes:
   cabundle:
   hostcerts:
   usercerts:
-  mysql-pki:
+  dbcerts:
 
 networks:
   site1-lan:
@@ -23,32 +23,29 @@ services:
     build:
       context: ../trust-anchors
     network_mode: "none"
+    # setup-mysql-trust.sh installs the database keys owned by uid 999
+    user: "0:0"
+    entrypoint: ["/bin/bash", "/setup-mysql-trust.sh"]
     volumes:
       - trustanchors:/trust-anchors
       - cabundle:/etc/pki
       - hostcerts:/hostcerts
       - usercerts:/usercerts
-
-  mysql-pki-init:
-    container_name: mysql-pki-init
-    image: ${DB_IMAGE}:${DB_IMAGE_TAG}
-    entrypoint: ["/bin/bash", "/tools/gen-mysql-pki.sh"]
-    network_mode: "none"
-    volumes:
-      - ./assets/mysql-pki/gen-mysql-pki.sh:/tools/gen-mysql-pki.sh:ro
-      - mysql-pki:/certs-mysql
+      - dbcerts:/dbcerts
+      - ./assets/mysql-trust/setup-mysql-trust.sh:/setup-mysql-trust.sh:ro
+      - ./assets/mysql-trust/x509/conf.d:/db-conf.d:ro
 
   db-primary:
     container_name: db-primary
     image: ${DB_IMAGE}:${DB_IMAGE_TAG}
     depends_on:
-      mysql-pki-init:
+      trust:
         condition: service_completed_successfully
     volumes:
       - data-primary:/var/lib/mysql
       - ./assets/db-primary:/docker-entrypoint-initdb.d
       - ./assets/mysql-conf/primary.cnf:/etc/mysql/conf.d/primary.cnf
-      - mysql-pki:/certs-mysql:ro
+      - dbcerts:/dbcerts:ro
     env_file:
       - env-files/db.env
     ports:
@@ -74,7 +71,7 @@ services:
       - data-replica:/var/lib/mysql
       - ./assets/db-replica:/docker-entrypoint-initdb.d
       - ./assets/mysql-conf/replica.cnf:/etc/mysql/conf.d/replica.cnf
-      - mysql-pki:/certs-mysql:ro
+      - dbcerts:/dbcerts:ro
     env_file:
       - env-files/db.env
     environment:
@@ -105,7 +102,7 @@ services:
       - data-remote:/var/lib/mysql
       - ./assets/db-remote:/docker-entrypoint-initdb.d
       - ./assets/mysql-conf/remote.cnf:/etc/mysql/conf.d/remote.cnf
-      - mysql-pki:/certs-mysql:ro
+      - dbcerts:/dbcerts:ro
     env_file:
       - env-files/db.env
     environment:

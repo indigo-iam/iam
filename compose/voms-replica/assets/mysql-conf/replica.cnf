@@ -27,6 +27,6 @@ replicate-do-table=iam.iam_user_info
 replicate-do-table=iam.iam_x509_cert
 replicate-do-table=iam.iam_x509_proxy
 
-ssl_ca=/certs-mysql/ca.pem
-ssl_cert=/certs-mysql/db-replica.cert.pem
-ssl_key=/certs-mysql/db-replica.key.pem
+ssl_ca=/dbcerts/ca.pem
+ssl_cert=/dbcerts/db-replica.cert.pem
+ssl_key=/dbcerts/db-replica.key.pem
