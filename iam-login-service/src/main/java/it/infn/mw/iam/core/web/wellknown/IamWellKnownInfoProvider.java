@@ -84,6 +84,7 @@ public class IamWellKnownInfoProvider implements WellKnownInfoProvider {
 
   private final IamProperties properties;
   private final SystemScopeService systemScopeService;
+  private final ProtectedResourceRegistry protectedResourceRegistry;
 
   private final List<String> allEncryptionAlgs;
   private final List<String> allEncryptionEncs;
@@ -103,9 +104,11 @@ public class IamWellKnownInfoProvider implements WellKnownInfoProvider {
 
 
   public IamWellKnownInfoProvider(IamProperties properties,
-      JWTEncryptionAndDecryptionService encService, SystemScopeService scopeService) {
+      JWTEncryptionAndDecryptionService encService, SystemScopeService scopeService,
+      ProtectedResourceRegistry protectedResourceRegistry) {
     this.properties = properties;
     this.systemScopeService = scopeService;
+    this.protectedResourceRegistry = protectedResourceRegistry;
 
     allEncryptionAlgs = encService.getAllEncryptionAlgsSupported()
       .stream()
@@ -185,6 +188,7 @@ public class IamWellKnownInfoProvider implements WellKnownInfoProvider {
       .codeChallengeMethodsSupported(CODE_CHALLENGE_METHODS)
       .scopesSupported(supportedScopes)
       .endSessionEndpoint(logoutEndpoint)
+      .protectedResources(protectedResourceRegistry.resourceIdentifiers())
       .build();
   }
 

@@ -217,6 +217,18 @@ iam:
     observation-window: ${IAM_LOGIN_LOCKOUT_OBSERVATION_WINDOW:5m}
     lock-duration: ${IAM_LOGIN_LOCKOUT_LOCK_DURATION:30m}
 
+  # Hosted RFC 9728 metadata, see ProtectedResourceProperties for the fields
+  protected-resources: []
+
+  protected-resources-file:
+    path: ${IAM_PROTECTED_RESOURCES_FILE:}
+    check-period-secs: ${IAM_PROTECTED_RESOURCES_FILE_CHECK_PERIOD_SECS:0}
+
+  resource-indicators:
+    restrict-to-protected-resources: ${IAM_RESOURCE_INDICATORS_RESTRICT_TO_PROTECTED_RESOURCES:false}
+    require-iam-audience: ${IAM_RESOURCE_INDICATORS_REQUIRE_IAM_AUDIENCE:false}
+    allow-iam-audience-request: ${IAM_RESOURCE_INDICATORS_ALLOW_IAM_AUDIENCE_REQUEST:true}
+
 cache:
   enabled: ${IAM_CACHE_ENABLED:true}
   oidc-discovery-cleanup-period-secs: ${IAM_OIDC_DISCOVERY_CLEANUP_PERIOD_SECS:86400}

@@ -15,6 +15,8 @@
  */
 package it.infn.mw.iam.test.oauth.authzcode;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -43,6 +45,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
+import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -98,8 +101,51 @@ class AuthorizationCodeResourceIndicatorTests {
     assertAudience(tokens, "http://1.org");
   }
 
+  @Test
+  void testRepeatedResourceIndicatorAtAuthorizationEndpoint() throws Exception {
+    JsonNode tokens = getTokenResponseWithAudience("resource", null,
+        new String[] {"http://example1.org", "http://example2.org"}, null);
+
+    List<String> audience =
+        JWTParser.parse(tokens.get("access_token").asText()).getJWTClaimsSet().getAudience();
+
+    assertThat(audience, containsInAnyOrder("http://example1.org", "http://example2.org"));
+  }
+
+  @Test
+  void testInvalidResourceIndicatorIsRedirectedToClient() throws Exception {
+
+    String location = mvc
+      .perform(get("/authorize").session(new MockHttpSession())
+        .param("response_type", "code")
+        .param("client_id", CLIENT_ID)
+        .param("redirect_uri", REDIRECT_URI)
+        .param("scope", SCOPE)
+        .param("resource", "not-a-uri")
+        .param("nonce", "1")
+        .param("state", "resource-test"))
+      .andExpect(status().is3xxRedirection())
+      .andReturn()
+      .getResponse()
+      .getHeader("Location");
+
+    assertNotNull(location);
+    var redirect = UriComponentsBuilder.fromUriString(location).build();
+    assertEquals(REDIRECT_URI,
+        UriComponentsBuilder.fromUriString(location).replaceQuery(null).build().toUriString());
+    assertEquals("invalid_target", redirect.getQueryParams().getFirst("error"));
+    assertEquals("resource-test", redirect.getQueryParams().getFirst("state"));
+  }
+
   private JsonNode getTokenResponseWithAudience(String resourceParamAuthz,
       String resourceParamToken, String resourceValueAuthz, String resourceValueToken)
+      throws Exception {
+    return getTokenResponseWithAudience(resourceParamAuthz, resourceParamToken,
+        new String[] {resourceValueAuthz}, resourceValueToken);
+  }
+
+  private JsonNode getTokenResponseWithAudience(String resourceParamAuthz,
+      String resourceParamToken, String[] resourceValuesAuthz, String resourceValueToken)
       throws Exception {
 
     MockHttpSession session = new MockHttpSession();
@@ -110,7 +156,7 @@ class AuthorizationCodeResourceIndicatorTests {
         .param("client_id", CLIENT_ID)
         .param("redirect_uri", REDIRECT_URI)
         .param("scope", SCOPE)
-        .param(resourceParamAuthz, resourceValueAuthz)
+        .param(resourceParamAuthz, resourceValuesAuthz)
         .param("nonce", "1")
         .param("state", "resource-test")
         .param("prompt", "consent"))
@@ -158,13 +204,17 @@ class AuthorizationCodeResourceIndicatorTests {
     // The token request is authenticated as the client, not the browser user.
     TestSecurityContextHolder.clearContext();
 
-    MvcResult tokenResponse = mvc
-      .perform(post("/token").with(httpBasic(CLIENT_ID, CLIENT_SECRET))
-        .contentType(APPLICATION_FORM_URLENCODED)
-        .param("grant_type", "authorization_code")
-        .param("redirect_uri", REDIRECT_URI)
-        .param("code", code)
-        .param(resourceParamToken, resourceValueToken))
+    MockHttpServletRequestBuilder tokenRequest =
+        post("/token").with(httpBasic(CLIENT_ID, CLIENT_SECRET))
+          .contentType(APPLICATION_FORM_URLENCODED)
+          .param("grant_type", "authorization_code")
+          .param("redirect_uri", REDIRECT_URI)
+          .param("code", code);
+    if (resourceParamToken != null) {
+      tokenRequest.param(resourceParamToken, resourceValueToken);
+    }
+
+    MvcResult tokenResponse = mvc.perform(tokenRequest)
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.access_token").isNotEmpty())
       .andReturn();
