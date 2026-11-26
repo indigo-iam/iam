@@ -23,8 +23,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
@@ -98,10 +96,9 @@ class ScimApiAuthzTests {
       .andExpect(jsonPath("$.error_description", equalTo("Access is denied")));
   }
 
-  @ParameterizedTest
-  @ValueSource(strings = {PRODUCTION_GROUP_ID, TEST_001_GROUP_ID})
-  @WithMockOAuthUser(user = "gm")
-  void testGroupManagerCannotAccessUserWithoutScimReadScope(String groupId) throws Exception {
+  @Test
+  @WithMockOAuthUser(user = "gm", authorities = {"ROLE_GM:" + PRODUCTION_GROUP_ID})
+  void testGroupManagerWithOAuthTokenCannotAccessUserWithoutScope() throws Exception {
 
     mvc.perform(get(USER_URI + "/" + TEST_USER_ID).contentType(SCIM_CONTENT_TYPE))
       .andExpect(status().isForbidden())
