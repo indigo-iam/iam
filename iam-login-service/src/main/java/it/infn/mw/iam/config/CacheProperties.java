@@ -40,6 +40,16 @@ public class CacheProperties {
 
   private long oidcDiscoveryCleanupPeriodSecs = 86400;
 
+  private long wellKnownCleanupPeriodSecs = 300;
+
+  private long defaultCleanupPeriodSecs = 60;
+
+  private long defaultCacheSize = 1000;
+
+  private boolean databaseMonitorEnabled = false;
+
+  private String databaseAvailabilityCheckInterval = "5000";
+
   private RedisProperties redis = new RedisProperties();
 
   public boolean isEnabled() {
@@ -58,6 +68,46 @@ public class CacheProperties {
     this.oidcDiscoveryCleanupPeriodSecs = oidcDiscoveryCleanupPeriodSecs;
   }
 
+  public long getwellKnownCleanupPeriodSecs() {
+    return wellKnownCleanupPeriodSecs;
+  }
+
+  public void setwellKnownCleanupPeriodSecs(long wellKnownCleanupPeriodSecs) {
+    this.wellKnownCleanupPeriodSecs = wellKnownCleanupPeriodSecs;
+  }
+
+  public long getDefaultCleanupPeriodSecs() {
+    return defaultCleanupPeriodSecs;
+  }
+
+  public void setDefaultCleanupPeriodSecs(long defaultCleanupPeriodSecs) {
+    this.defaultCleanupPeriodSecs = defaultCleanupPeriodSecs;
+  }
+
+  public long getDefaultCacheSize() {
+    return defaultCacheSize;
+  }
+
+  public void setDefaultCacheSize(long defaultCacheSize) {
+    this.defaultCacheSize = defaultCacheSize;
+  }
+
+  public boolean getDatabaseMonitorEnabled() {
+    return databaseMonitorEnabled;
+  }
+
+  public void setDatabaseMonitorEnabled(boolean databaseMonitorEnabled) {
+    this.databaseMonitorEnabled = databaseMonitorEnabled;
+  }
+
+  public String getdatabaseAvailabilityCheckInterval() {
+    return databaseAvailabilityCheckInterval;
+  }
+
+  public void setdatabaseAvailabilityCheckInterval(String databaseAvailabilityCheckInterval) {
+    this.databaseAvailabilityCheckInterval = databaseAvailabilityCheckInterval;
+  }
+
   public RedisProperties getRedis() {
     return redis;
   }
@@ -65,6 +115,5 @@ public class CacheProperties {
   public void setRedis(RedisProperties redis) {
     this.redis = redis;
   }
-
 
 }

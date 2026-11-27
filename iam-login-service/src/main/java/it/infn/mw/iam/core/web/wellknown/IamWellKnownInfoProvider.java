@@ -99,11 +99,12 @@ public class IamWellKnownInfoProvider implements WellKnownInfoProvider {
   private final String aboutEndpoint;
   private final String scimEndpoint;
   private final String logoutEndpoint;
+  private final WellKnownSnapshot snapshot;
   private Set<String> supportedScopes;
 
 
   public IamWellKnownInfoProvider(IamProperties properties,
-      JWTEncryptionAndDecryptionService encService, SystemScopeService scopeService) {
+      JWTEncryptionAndDecryptionService encService, SystemScopeService scopeService, WellKnownSnapshot snapshot) {
     this.properties = properties;
     this.systemScopeService = scopeService;
 
@@ -129,6 +130,7 @@ public class IamWellKnownInfoProvider implements WellKnownInfoProvider {
     scimEndpoint = buildEndpointUrl(SCIM_ENDPOINT);
     logoutEndpoint = buildEndpointUrl(LOGOUT_ENDPOINT);
     updateSupportedScopes();
+    this.snapshot = snapshot;
   }
 
   protected void updateSupportedScopes() {
@@ -149,7 +151,7 @@ public class IamWellKnownInfoProvider implements WellKnownInfoProvider {
 
     updateSupportedScopes();
 
-    return WellKnownConfiguration.builder()
+    WellKnownConfiguration configuration = WellKnownConfiguration.builder()
       .issuer(properties.getIssuer())
       .authorizationEndpoint(authorizeEndpoint)
       .tokenEndpoint(tokenEndpoint)
@@ -186,6 +188,11 @@ public class IamWellKnownInfoProvider implements WellKnownInfoProvider {
       .scopesSupported(supportedScopes)
       .endSessionEndpoint(logoutEndpoint)
       .build();
+
+      // Storing the last known configuration
+      snapshot.store(configuration);
+
+      return configuration;
   }
 
 }
