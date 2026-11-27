@@ -16,6 +16,7 @@
 package it.infn.mw.iam.core.oauth;
 
 import static it.infn.mw.iam.core.oauth.granters.TokenExchangeTokenGranter.TOKEN_EXCHANGE_GRANT_TYPE;
+import static it.infn.mw.iam.util.LogUtils.sanitizeForLogging;
 
 import java.util.List;
 import java.util.Map;
@@ -36,7 +37,6 @@ import org.springframework.security.oauth2.provider.OAuth2Request;
 import org.springframework.security.oauth2.provider.TokenRequest;
 import org.springframework.security.oauth2.provider.request.DefaultOAuth2RequestFactory;
 
-import it.infn.mw.iam.audit.events.utils.EventUtils;
 import it.infn.mw.iam.core.jwk.ClientKeyCacheService;
 import it.infn.mw.iam.core.oauth.device.DeviceCodeService;
 import it.infn.mw.iam.core.oauth.exceptions.OAuth2ProtocolException;
@@ -150,7 +150,7 @@ public class IamOAuth2RequestFactory extends DefaultOAuth2RequestFactory {
 
     if (!clientId.equals(authenticatedClient.getClientId())) {
       LOG.warn("Given client ID {} does not match authenticated client {}",
-          EventUtils.sanitize(clientId), EventUtils.sanitize(authenticatedClient.getClientId()));
+          sanitizeForLogging(clientId), sanitizeForLogging(authenticatedClient.getClientId()));
       throw new InvalidClientException("Given client ID does not match authenticated client");
     }
 

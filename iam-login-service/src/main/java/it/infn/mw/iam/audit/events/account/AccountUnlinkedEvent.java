@@ -15,7 +15,7 @@
  */
 package it.infn.mw.iam.audit.events.account;
 
-import static it.infn.mw.iam.audit.events.utils.EventUtils.sanitize;
+import static it.infn.mw.iam.util.LogUtils.sanitizeForLogging;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
@@ -36,8 +36,8 @@ public class AccountUnlinkedEvent extends AccountEvent {
       ExternalAuthenticationType accountType, String issuer, String subject, String message) {
     super(source, account, message);
     this.externalAuthenticationType = accountType;
-    this.issuer = sanitize(issuer);
-    this.subject = sanitize(subject);
+    this.issuer = sanitizeForLogging(issuer);
+    this.subject = sanitizeForLogging(subject);
   }
 
   public ExternalAuthenticationType getExternalAuthenticationType() {

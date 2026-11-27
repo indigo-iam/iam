@@ -15,7 +15,7 @@
  */
 package it.infn.mw.iam.audit.events.account.x509;
 
-import static it.infn.mw.iam.audit.events.utils.EventUtils.sanitize;
+import static it.infn.mw.iam.util.LogUtils.sanitizeForLogging;
 
 import it.infn.mw.iam.audit.events.account.AccountEvent;
 import it.infn.mw.iam.persistence.model.IamAccount;
@@ -34,8 +34,8 @@ public class X509CertificateUnlinkedEvent extends AccountEvent {
   public X509CertificateUnlinkedEvent(Object source, IamAccount account, String message,
       String certificateSubject, String certificateIssuer) {
     super(source, account, message);
-    this.certificateSubject = sanitize(certificateSubject);
-    this.certificateIssuer = sanitize(certificateIssuer);
+    this.certificateSubject = sanitizeForLogging(certificateSubject);
+    this.certificateIssuer = sanitizeForLogging(certificateIssuer);
   }
 
   public String getCertificateSubject() {
