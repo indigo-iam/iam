@@ -75,17 +75,17 @@ public class AccountAuthorityController {
       .fromAuthorities(authorityService.getAccountAuthorities(findAccountByName(authn.getName())));
   }
 
-  @PreAuthorize("#iam.hasScope('iam:admin.read') or #iam.hasAnyDashboardRole('ROLE_ADMIN', 'ROLE_GM', 'ROLE_READER')")
+  @PreAuthorize("#iam.hasScope('iam:admin.read') or #iam.isGroupManagerOfUser(#id) or #iam.hasAnyDashboardRole('ROLE_ADMIN', 'ROLE_READER')")
   @GetMapping(value = "/account/{id}/authorities")
   @ResponseBody
-  public AuthoritySetDTO getAuthoritiesForAccount(@PathVariable("id") String id) {
+  public AuthoritySetDTO getAuthoritiesForAccount(@PathVariable String id) {
     return AuthoritySetDTO
       .fromAuthorities(authorityService.getAccountAuthorities(findAccountById(id)));
   }
 
   @PreAuthorize("#iam.hasScope('iam:admin.write') or #iam.hasDashboardRole('ROLE_ADMIN')")
   @PostMapping(value = "/account/{id}/authorities")
-  public void addAuthorityToAccount(@PathVariable("id") String id, @Valid AuthorityDTO authority,
+  public void addAuthorityToAccount(@PathVariable String id, @Valid AuthorityDTO authority,
       BindingResult validationResult) {
 
     if (validationResult.hasErrors()) {
@@ -98,8 +98,8 @@ public class AccountAuthorityController {
 
   @PreAuthorize("#iam.hasScope('iam:admin.write') or #iam.hasDashboardRole('ROLE_ADMIN')")
   @DeleteMapping(value = "/account/{id}/authorities")
-  public void removeAuthorityFromAccount(@PathVariable("id") String id,
-      @Valid AuthorityDTO authority, BindingResult validationResult) {
+  public void removeAuthorityFromAccount(@PathVariable String id, @Valid AuthorityDTO authority,
+      BindingResult validationResult) {
 
     if (validationResult.hasErrors()) {
       throw buildValidationError(validationResult);

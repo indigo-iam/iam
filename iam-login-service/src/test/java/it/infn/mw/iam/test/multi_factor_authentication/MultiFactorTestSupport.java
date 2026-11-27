@@ -16,8 +16,11 @@
 package it.infn.mw.iam.test.multi_factor_authentication;
 
 import java.time.Instant;
+import java.util.Set;
 
 import it.infn.mw.iam.persistence.model.IamAccount;
+import it.infn.mw.iam.persistence.model.IamAccountGroupMembership;
+import it.infn.mw.iam.persistence.model.IamGroup;
 import it.infn.mw.iam.persistence.model.IamTotpMfa;
 import it.infn.mw.iam.util.mfa.IamTotpMfaEncryptionAndDecryptionUtil;
 
@@ -33,6 +36,7 @@ public class MultiFactorTestSupport extends IamTotpMfaCommons {
   public static final String TOTP_EMAIL = "test-mfa@example.org";
   public static final String TOTP_GIVEN_NAME = "Test";
   public static final String TOTP_FAMILY_NAME = "Mfa";
+  public static final String TOTP_GROUP_UUID = "6a384bcd-d4b3-4b7f-a2fe-7d897ada0dd1";
 
   protected IamAccount getTestAccount(Instant instant) {
     IamAccount a = IamAccount.newAccount();
@@ -52,6 +56,11 @@ public class MultiFactorTestSupport extends IamTotpMfaCommons {
     a.getUserInfo().setEmail(TOTP_EMAIL);
     a.getUserInfo().setGivenName(TOTP_GIVEN_NAME);
     a.getUserInfo().setFamilyName(TOTP_FAMILY_NAME);
+    IamAccountGroupMembership membership = new IamAccountGroupMembership();
+    IamGroup group = new IamGroup();
+    group.setUuid(TOTP_GROUP_UUID);
+    membership.setGroup(group);
+    a.setGroups(Set.of(membership));
     a.touch(instant);
     return a;
   }

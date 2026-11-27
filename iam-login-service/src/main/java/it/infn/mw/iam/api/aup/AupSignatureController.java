@@ -128,7 +128,7 @@ public class AupSignatureController {
   }
 
   @GetMapping(value = "/iam/aup/signature/{accountId}")
-  @PreAuthorize("#iam.hasScope('iam:admin.read') or #iam.hasAnyDashboardRole('ROLE_ADMIN', 'ROLE_GM', 'ROLE_READER') or #iam.isUser(#accountId)")
+  @PreAuthorize("#iam.hasScope('iam:admin.read') or #iam.isGroupManagerOfUser(#accountId) or #iam.hasAnyDashboardRole('ROLE_ADMIN', 'ROLE_READER') or #iam.isUser(#accountId)")
   public AupSignatureDTO getSignatureForAccount(@PathVariable String accountId)
       throws AccountNotFoundException {
 
@@ -155,8 +155,7 @@ public class AupSignatureController {
       .orElseThrow(accountNotFoundException(format(ACCOUNT_NOT_FOUND_FOR_ID_MESSAGE, accountId)));
     IamAup aup = aupRepo.findDefaultAup().orElseThrow(aupNotFoundException());
 
-    Date signatureTime =
-        dto == null ? Date.from(clock.instant()) : dto.getSignatureTime();
+    Date signatureTime = dto == null ? Date.from(clock.instant()) : dto.getSignatureTime();
     IamAupSignature signature =
         signatureRepo.createSignatureForAccount(aup, account, signatureTime);
 

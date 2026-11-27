@@ -73,8 +73,10 @@ class MultiFactorSettingsControllerTests extends MultiFactorTestSupport {
 
     mfaAccount = getTotpMfaAccount(clock.instant());
     totp = getTotpMfaFor(mfaAccount, clock.instant());
-    Mockito.when(accountRepository.findByUuid(mfaAccount.getUuid())).thenReturn(Optional.of(mfaAccount));
-    Mockito.when(accountRepository.findByUsername(mfaAccount.getUsername())).thenReturn(Optional.of(mfaAccount));
+    Mockito.when(accountRepository.findByUuid(mfaAccount.getUuid()))
+      .thenReturn(Optional.of(mfaAccount));
+    Mockito.when(accountRepository.findByUsername(mfaAccount.getUsername()))
+      .thenReturn(Optional.of(mfaAccount));
     Mockito.when(totpMfaRepository.findByAccount(mfaAccount)).thenReturn(Optional.of(totp));
   }
 
@@ -91,6 +93,13 @@ class MultiFactorSettingsControllerTests extends MultiFactorTestSupport {
     mvc.perform(get(MULTI_FACTOR_SETTINGS_FOR_ACCOUNT_URL, TOTP_UUID))
       .andExpect(status().isOk())
       .andExpect((jsonPath("$.authenticatorAppActive", equalTo(true))));
+  }
+
+  @Test
+  @WithMockUser(username = "group-manager", roles = "GM:6a384bcd-d4b3-4b7f-a2fe-7d897ada0dd1")
+  void testGetMfaAccountSettingForbiddenForAccountOutsideManagedGroups() throws Exception {
+    mvc.perform(get(MULTI_FACTOR_SETTINGS_FOR_ACCOUNT_URL, TEST_UUID))
+      .andExpect(status().isForbidden());
   }
 
   @Test

@@ -74,8 +74,8 @@ public class GroupRequestsController {
       @RequestParam(required = false) String username,
       @RequestParam(required = false) String userFullName,
       @RequestParam(required = false) String groupName,
-      @RequestParam(required = false) String notes,
-      @RequestParam(required = false) String status, @RequestParam(required = false) Integer count,
+      @RequestParam(required = false) String notes, @RequestParam(required = false) String status,
+      @RequestParam(required = false) Integer count,
       @RequestParam(required = false) Integer startIndex) {
 
     final Sort sort = Sort.by("account.username", "group.name", "creationTime");
@@ -83,33 +83,34 @@ public class GroupRequestsController {
     OffsetPageable pageRequest =
         PagingUtils.buildPageRequest(count, startIndex, GROUP_REQUEST_MAX_PAGE_SIZE, sort);
 
-    return groupRequestService.searchGroupRequests(username, userFullName, groupName, notes, status, pageRequest);
+    return groupRequestService.searchGroupRequests(username, userFullName, groupName, notes, status,
+        pageRequest);
   }
 
   @GetMapping(value = BASE_RESOURCE + "/{requestId}")
   @PreAuthorize("#iam.hasScope('iam:admin.read') or #iam.hasDashboardRole('ROLE_ADMIN') or #iam.canAccessGroupRequest(#requestId)")
-  public GroupRequestDto getGroupRequestDetails(@PathVariable("requestId") String requestId) {
+  public GroupRequestDto getGroupRequestDetails(@PathVariable String requestId) {
     return groupRequestService.getGroupRequestDetails(requestId);
   }
 
   @DeleteMapping(value = BASE_RESOURCE + "/{requestId}")
   @PreAuthorize("#iam.hasScope('iam:admin.write') or #iam.hasDashboardRole('ROLE_ADMIN') or #iam.userCanDeleteGroupRequest(#requestId)")
   @ResponseStatus(HttpStatus.NO_CONTENT)
-  public void deleteGroupRequest(@PathVariable("requestId") String requestId) {
+  public void deleteGroupRequest(@PathVariable String requestId) {
     groupRequestService.deleteGroupRequest(requestId);
   }
 
   @PostMapping(value = BASE_RESOURCE + "/{requestId}/approve")
   @PreAuthorize("#iam.hasScope('iam:admin.write') or #iam.hasDashboardRole('ROLE_ADMIN') or #iam.canManageGroupRequest(#requestId)")
   @ResponseStatus(HttpStatus.OK)
-  public GroupRequestDto approveGroupRequest(@PathVariable("requestId") String requestId) {
+  public GroupRequestDto approveGroupRequest(@PathVariable String requestId) {
     return groupRequestService.approveGroupRequest(requestId);
   }
 
   @PostMapping(value = BASE_RESOURCE + "/{requestId}/reject")
   @PreAuthorize("#iam.hasScope('iam:admin.read') or #iam.hasDashboardRole('ROLE_ADMIN') or #iam.canManageGroupRequest(#requestId)")
   @ResponseStatus(HttpStatus.OK)
-  public GroupRequestDto rejectGroupRequest(@PathVariable("requestId") String requestId,
+  public GroupRequestDto rejectGroupRequest(@PathVariable String requestId,
       @RequestParam @NotEmpty String motivation) {
     return groupRequestService.rejectGroupRequest(requestId, motivation);
   }
