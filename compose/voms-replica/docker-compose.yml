@@ -6,6 +6,7 @@ volumes:
   cabundle:
   hostcerts:
   usercerts:
+  dbcerts:
 
 networks:
   site1-lan:
@@ -21,21 +22,30 @@ services:
   trust:
     build:
       context: ../trust-anchors
+    network_mode: "none"
+    # setup-mysql-trust.sh installs the database keys owned by uid 999
+    user: "0:0"
+    entrypoint: ["/bin/bash", "/setup-mysql-trust.sh"]
     volumes:
       - trustanchors:/trust-anchors
       - cabundle:/etc/pki
       - hostcerts:/hostcerts
       - usercerts:/usercerts
+      - dbcerts:/dbcerts
+      - ./assets/mysql-trust/setup-mysql-trust.sh:/setup-mysql-trust.sh:ro
+      - ./assets/mysql-trust/x509/conf.d:/db-conf.d:ro
 
   db-primary:
     container_name: db-primary
     image: ${DB_IMAGE}:${DB_IMAGE_TAG}
+    depends_on:
+      trust:
+        condition: service_completed_successfully
     volumes:
       - data-primary:/var/lib/mysql
       - ./assets/db-primary:/docker-entrypoint-initdb.d
       - ./assets/mysql-conf/primary.cnf:/etc/mysql/conf.d/primary.cnf
-      - hostcerts:/certs
-      - trustanchors:/etc/grid-security/certificates
+      - dbcerts:/dbcerts:ro
     env_file:
       - env-files/db.env
     ports:
@@ -61,8 +71,7 @@ services:
       - data-replica:/var/lib/mysql
       - ./assets/db-replica:/docker-entrypoint-initdb.d
       - ./assets/mysql-conf/replica.cnf:/etc/mysql/conf.d/replica.cnf
-      - hostcerts:/certs
-      - trustanchors:/etc/grid-security/certificates
+      - dbcerts:/dbcerts:ro
     env_file:
       - env-files/db.env
     environment:
@@ -93,7 +102,7 @@ services:
       - data-remote:/var/lib/mysql
       - ./assets/db-remote:/docker-entrypoint-initdb.d
       - ./assets/mysql-conf/remote.cnf:/etc/mysql/conf.d/remote.cnf
-      - trustanchors:/etc/grid-security/certificates
+      - dbcerts:/dbcerts:ro
     env_file:
       - env-files/db.env
     environment:
@@ -129,6 +138,8 @@ services:
     depends_on:
       db-primary:
         condition: service_healthy
+      trust:
+        condition: service_completed_successfully
     volumes:
       - ../iam-conf/application:/workspace/config:ro
       - hostcerts:/etc/grid-security/voms
@@ -153,6 +164,8 @@ services:
     depends_on:
       db-replica:
         condition: service_healthy
+      trust:
+        condition: service_completed_successfully
     volumes:
       - ../iam-conf/application:/workspace/config:ro
       - hostcerts:/etc/grid-security/voms
@@ -177,6 +190,8 @@ services:
     depends_on:
       db-remote:
         condition: service_healthy
+      trust:
+        condition: service_completed_successfully
     volumes:
       - ../iam-conf/application:/workspace/config:ro
       - hostcerts:/etc/grid-security/voms
