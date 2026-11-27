@@ -1,17 +1,17 @@
--- Remove orphaned scopes
-DELETE FROM whitelisted_site_scope
-WHERE NOT EXISTS (
-    SELECT 1
-    FROM whitelisted_site
-    WHERE whitelisted_site.id = whitelisted_site_scope.owner_id
-);
-
 -- Remove orphaned consent exemptions
 DELETE FROM whitelisted_site
 WHERE NOT EXISTS (
     SELECT 1
     FROM client_details
     WHERE client_details.client_id = whitelisted_site.client_id
+);
+
+-- Remove orphaned scopes
+DELETE FROM whitelisted_site_scope
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM whitelisted_site
+    WHERE whitelisted_site.id = whitelisted_site_scope.owner_id
 );
 
 -- Add foreign key from consent exemption to client
