@@ -33,22 +33,22 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
+import it.infn.mw.iam.api.client.service.ClientService;
 import it.infn.mw.iam.api.common.ErrorDTO;
 import it.infn.mw.iam.core.oauth.consent.ConsentExemptionService;
 import it.infn.mw.iam.persistence.model.ConsentExemption;
-import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
 
 @RestController
 @RequestMapping("/api/whitelist")
 public class ConsentExemptionController {
 
   private final ConsentExemptionService exemptionService;
-  private final IamClientRepository clientRepository;
+  private final ClientService clientService;
 
   public ConsentExemptionController(ConsentExemptionService exceptionService,
-      IamClientRepository clientRepository) {
+      ClientService clientService) {
     this.exemptionService = exceptionService;
-    this.clientRepository = clientRepository;
+    this.clientService = clientService;
   }
 
   @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
@@ -64,7 +64,7 @@ public class ConsentExemptionController {
   public ConsentExemptionDTO addNewConsentExemption(@RequestBody ConsentExemptionDTO dto,
       Authentication auth) {
 
-    clientRepository.findByClientId(dto.clientId())
+    clientService.findClientByClientId(dto.clientId())
       .orElseThrow(() -> new EntityNotFoundException(
           "Client with clientId " + dto.clientId() + " not found."));
 

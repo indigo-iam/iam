@@ -51,10 +51,10 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
 import it.infn.mw.iam.IamLoginService;
+import it.infn.mw.iam.api.client.service.ClientService;
 import it.infn.mw.iam.core.oauth.consent.ConsentExemptionService;
 import it.infn.mw.iam.persistence.model.ClientDetailsEntity;
 import it.infn.mw.iam.persistence.model.ConsentExemption;
-import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
 
 @SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.MOCK)
 @AutoConfigureMockMvc
@@ -69,7 +69,7 @@ class ConsentExemptionControllerTests {
   private ConsentExemptionService exceptionService;
 
   @MockBean
-  private IamClientRepository clientRepository;
+  private ClientService clientService;
 
   @Test
   void getAllConsentExemptionsReturnsAllEntries() throws Exception {
@@ -154,7 +154,7 @@ class ConsentExemptionControllerTests {
     ClientDetailsEntity client = new ClientDetailsEntity();
     client.setClientId("new-client");
 
-    when(clientRepository.findByClientId("new-client")).thenReturn(Optional.of(client));
+    when(clientService.findClientByClientId("new-client")).thenReturn(Optional.of(client));
 
     mockMvc
       .perform(post("/api/whitelist").with(csrf().asHeader())
@@ -203,7 +203,7 @@ class ConsentExemptionControllerTests {
     ClientDetailsEntity client = new ClientDetailsEntity();
     client.setClientId("client-id");
 
-    when(clientRepository.findByClientId("client-id")).thenReturn(Optional.of(client));
+    when(clientService.findClientByClientId("client-id")).thenReturn(Optional.of(client));
 
     mockMvc
       .perform(post("/api/whitelist").with(csrf().asHeader())
@@ -258,7 +258,7 @@ class ConsentExemptionControllerTests {
   @Test
   void addNewConsentExemptionReturnsNotFoundWhenClientDoesNotExist() throws Exception {
 
-    when(clientRepository.findByClientId("missing-client")).thenReturn(Optional.empty());
+    when(clientService.findClientByClientId("missing-client")).thenReturn(Optional.empty());
 
     mockMvc
       .perform(post("/api/whitelist").with(csrf().asHeader())
@@ -271,7 +271,7 @@ class ConsentExemptionControllerTests {
             """))
       .andExpect(status().isNotFound());
 
-    verify(clientRepository).findByClientId("missing-client");
+    verify(clientService).findClientByClientId("missing-client");
     verify(exceptionService, never()).save(any(ConsentExemption.class));
   }
 
