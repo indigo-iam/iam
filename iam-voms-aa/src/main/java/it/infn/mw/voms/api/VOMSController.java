@@ -15,6 +15,7 @@
  */
 package it.infn.mw.voms.api;
 
+import static it.infn.mw.iam.util.LogUtils.sanitizeForLogging;
 import static java.lang.String.format;
 
 import java.io.IOException;
@@ -152,14 +153,10 @@ public class VOMSController extends VOMSControllerSupport implements Application
       VOMSRequest r = c.getRequest();
       log.debug(
           "VOMSRequest: [holderIssuer: {}, holderSubject: {}, requesterIssuer: {}, requesterSubject: {}, attributes: {}, FQANs: {}, validity: {}, targets: {}]",
-          sanitize(r.getHolderIssuer()), sanitize(r.getHolderSubject()),
-          sanitize(r.getRequesterIssuer()), sanitize(r.getRequesterSubject()),
+          sanitizeForLogging(r.getHolderIssuer()), sanitizeForLogging(r.getHolderSubject()),
+          sanitizeForLogging(r.getRequesterIssuer()), sanitizeForLogging(r.getRequesterSubject()),
           r.getRequestAttributes(), r.getRequestedFQANs(), r.getRequestedValidity(), r.getTargets());
     }
-  }
-
-  private String sanitize(String str) {
-    return str.replaceAll("[\n\r]", "_");
   }
 
   private String userStr(VOMSRequestContext c) {
@@ -167,18 +164,18 @@ public class VOMSController extends VOMSControllerSupport implements Application
     String uuid = c.getIamAccount().getUuid();
     String reqSubject = c.getRequest().getRequesterSubject();
     String reqIssuer = c.getRequest().getRequesterIssuer();
-    return sanitize(format("[username: %s, uuid: %s, subjectDN: %s, issuerDN: %s]", username, uuid,
+    return sanitizeForLogging(format("[username: %s, uuid: %s, subjectDN: %s, issuerDN: %s]", username, uuid,
         reqSubject, reqIssuer));
   }
 
   private String errorResponse(VOMSRequestContext c) {
-    return sanitize(format("[outcome: %s, errorMessages: %s]", c.getResponse().getOutcome().name(),
+    return sanitizeForLogging(format("[outcome: %s, errorMessages: %s]", c.getResponse().getOutcome().name(),
         c.getResponse().getErrorMessages()));
   }
 
   private String successResponse(VOMSRequestContext c) {
     VOMSResponse r = c.getResponse();
-    return sanitize(format(
+    return sanitizeForLogging(format(
         "[outcome: %s, VO: %s, uri: %s, targets: %s, issuedFQANs: %s, notAfter: %s, notBefore: %s]",
         r.getOutcome().name(), c.getVOName(), c.getHost() + ":" + c.getPort(),
         r.getTargets().toString(), r.getIssuedFQANs().toString(),

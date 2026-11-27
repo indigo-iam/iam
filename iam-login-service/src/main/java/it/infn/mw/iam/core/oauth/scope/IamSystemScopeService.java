@@ -15,7 +15,7 @@
  */
 package it.infn.mw.iam.core.oauth.scope;
 
-import static it.infn.mw.iam.audit.events.utils.EventUtils.sanitize;
+import static it.infn.mw.iam.util.LogUtils.sanitizeForLogging;
 import static java.util.stream.Collectors.toSet;
 
 import java.util.LinkedHashSet;
@@ -188,13 +188,13 @@ public class IamSystemScopeService implements SystemScopeService {
 
     if (isReserved(scope.getValue())) {
       if (LOG.isErrorEnabled()) {
-        LOG.error("Invalid reserved scope value '{}'", sanitize(scope.getValue()));
+        LOG.error("Invalid reserved scope value '{}'", sanitizeForLogging(scope.getValue()));
       }
       throw new InvalidRequestException("Invalid reserved scope");
     }
     if (isProtected(scope.getValue())) {
       if (LOG.isErrorEnabled()) {
-        LOG.error("Invalid protected scope value '{}'", sanitize(scope.getValue()));
+        LOG.error("Invalid protected scope value '{}'", sanitizeForLogging(scope.getValue()));
       }
       throw new InvalidRequestException("Invalid protected scope");
     }
