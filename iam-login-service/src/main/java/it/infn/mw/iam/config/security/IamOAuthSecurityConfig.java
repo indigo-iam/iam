@@ -16,6 +16,7 @@
 package it.infn.mw.iam.config.security;
 
 import static org.springframework.http.HttpMethod.OPTIONS;
+import static org.springframework.http.HttpMethod.POST;
 import static org.springframework.security.config.http.SessionCreationPolicy.NEVER;
 import static org.springframework.security.config.http.SessionCreationPolicy.STATELESS;
 
@@ -131,8 +132,12 @@ public class IamOAuthSecurityConfig {
 
         .sessionManagement(session -> session.sessionCreationPolicy(NEVER))
 
-        .authorizeRequests(
-            authorize -> authorize.antMatchers(REGISTER_ENDPOINT_PATTERN).permitAll())
+        .authorizeRequests(authorize -> authorize
+          .antMatchers(POST, ClientRegistrationApiController.ENDPOINT,
+              ClientRegistrationApiController.ENDPOINT + "/")
+          .access("@clientRegistrationEarlyAuthorization.canRegister(authentication)")
+          .anyRequest()
+          .permitAll())
 
         .csrf(csrf -> csrf.disable());
     }
