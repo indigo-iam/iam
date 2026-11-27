@@ -90,12 +90,14 @@ public class IamDeviceEndpointController {
   private final IamUserApprovalUtils userApprovalUtils;
   private final IamDeviceCodeRepository deviceCodeRepository;
   private final ScopeFilter scopeFilter;
+  private final AudienceRequestValidator audienceRequestValidator;
 
   public IamDeviceEndpointController(Clock clock, IamClientRepository clientRepository,
       SystemScopeService scopeService, IamProperties properties,
       DeviceCodeService deviceCodeService, OAuth2RequestFactory oAuth2RequestFactory,
       UserApprovalHandler iamUserApprovalHandler, IamUserApprovalUtils userApprovalUtils,
-      IamDeviceCodeRepository deviceCodeRepository, ScopeFilter scopeFilter) {
+      IamDeviceCodeRepository deviceCodeRepository, ScopeFilter scopeFilter,
+      AudienceRequestValidator audienceRequestValidator) {
     this.clock = clock;
     this.clientRepository = clientRepository;
     this.scopeService = scopeService;
@@ -106,6 +108,7 @@ public class IamDeviceEndpointController {
     this.userApprovalUtils = userApprovalUtils;
     this.deviceCodeRepository = deviceCodeRepository;
     this.scopeFilter = scopeFilter;
+    this.audienceRequestValidator = audienceRequestValidator;
   }
 
   @ResponseBody
@@ -132,6 +135,8 @@ public class IamDeviceEndpointController {
       throw OAuth2ProtocolException
         .invalidScope("One or more requested scope is not allowed for client '" + clientId + "'");
     }
+
+    audienceRequestValidator.validateResourceRequest(parameters);
 
     try {
       DeviceCode dc = deviceCodeService.createNewDeviceCode(requestedScopes, client, parameters);
