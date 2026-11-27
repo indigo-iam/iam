@@ -24,6 +24,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -34,11 +35,16 @@ import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 @IamMockMvcIntegrationTest
 class ScimApiAuthzTests {
 
+  private static final String PRODUCTION_GROUP_ID = "c617d586-54e6-411d-8e38-64967798fa8a";
+  private static final String TEST_001_GROUP_ID = "c617d586-54e6-411d-8e38-649677980001";
+  private static final String TEST_USER_ID = "80e5fb8d-b7c8-451a-89ba-346ae278a66f";
+  private static final String INVALID_USER_ID = "invalid-uuid";
+
+  private static final String GROUP_URI = ScimUtils.getGroupsLocation();
+  private static final String USER_URI = ScimUtils.getUsersLocation();
+
   @Autowired
   private MockMvc mvc;
-
-  private final static String GROUP_URI = ScimUtils.getGroupsLocation();
-  private final static String USER_URI = ScimUtils.getUsersLocation();
 
   @Test
   @WithMockOAuthUser(user = "admin", authorities = {"ROLE_ADMIN"})
@@ -84,13 +90,44 @@ class ScimApiAuthzTests {
   @WithMockOAuthUser(user = "admin", authorities = {"ROLE_ADMIN"})
   void testAdminScimUserRequestFailure() throws Exception {
 
-    // Some existing user as defined in the test db
-    String uuid = "80e5fb8d-b7c8-451a-89ba-346ae278a66f";
-
-    mvc.perform(get(USER_URI + "/" + uuid).contentType(SCIM_CONTENT_TYPE))
+    mvc.perform(get(USER_URI + "/" + TEST_USER_ID).contentType(SCIM_CONTENT_TYPE))
       .andExpect(status().isForbidden())
       .andExpect(jsonPath("$.error", equalTo("access_denied")))
       .andExpect(jsonPath("$.error_description", equalTo("Access is denied")));
   }
 
+  @Test
+  @WithMockOAuthUser(user = "gm", authorities = {"ROLE_GM:" + PRODUCTION_GROUP_ID})
+  void testGroupManagerWithOAuthTokenCannotAccessUserWithoutScope() throws Exception {
+
+    mvc.perform(get(USER_URI + "/" + TEST_USER_ID).contentType(SCIM_CONTENT_TYPE))
+      .andExpect(status().isForbidden())
+      .andExpect(jsonPath("$.error", equalTo("access_denied")));
+  }
+
+  @Test
+  @WithMockUser(username = "gm", roles = {"GM:" + PRODUCTION_GROUP_ID})
+  void testGroupManagerCanAccessUserInManagedGroup() throws Exception {
+
+    mvc.perform(get(USER_URI + "/" + TEST_USER_ID).contentType(SCIM_CONTENT_TYPE))
+      .andExpect(status().isOk());
+  }
+
+  @Test
+  @WithMockUser(username = "gm", roles = {"GM:" + TEST_001_GROUP_ID})
+  void testGroupManagerCannotAccessUserInUnmanagedGroup() throws Exception {
+
+    mvc.perform(get(USER_URI + "/" + TEST_USER_ID).contentType(SCIM_CONTENT_TYPE))
+      .andExpect(status().isForbidden())
+      .andExpect(jsonPath("$.error", equalTo("access_denied")));
+  }
+
+  @Test
+  @WithMockUser(username = "gm", roles = {"GM:" + PRODUCTION_GROUP_ID})
+  void testIsGroupManagerOfUserReturnsFalseWhenUserDoesNotExist() throws Exception {
+
+    mvc.perform(get(USER_URI + "/" + INVALID_USER_ID).contentType(SCIM_CONTENT_TYPE))
+      .andExpect(status().isForbidden())
+      .andExpect(jsonPath("$.error", equalTo("access_denied")));
+  }
 }
