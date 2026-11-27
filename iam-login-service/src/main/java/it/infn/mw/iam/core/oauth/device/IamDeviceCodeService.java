@@ -26,6 +26,7 @@ import java.util.UUID;
 
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import it.infn.mw.iam.core.IamAuthenticationHolderService;
 import it.infn.mw.iam.persistence.model.AuthenticationHolderEntity;
@@ -35,6 +36,7 @@ import it.infn.mw.iam.persistence.repository.IamDeviceCodeRepository;
 
 @SuppressWarnings("deprecation")
 @Service
+@Transactional
 public class IamDeviceCodeService implements DeviceCodeService {
 
   private final Clock clock;

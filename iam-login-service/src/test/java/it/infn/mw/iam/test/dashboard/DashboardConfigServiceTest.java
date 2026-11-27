@@ -39,6 +39,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.mock.env.MockEnvironment;
 
 import it.infn.mw.iam.api.client.service.ClientService;
 import it.infn.mw.iam.api.client.service.ClientUtils;
@@ -58,7 +59,12 @@ class DashboardConfigServiceTest {
   private static final String CLIENT_ID = "dashboard-client";
   private static final String CLIENT_SECRET = "dashboard-client-secret-01234567890";
   private static final String BASE_URL = "https://iam.example.org";
-  private static final String REDIRECT_URI = BASE_URL + DashboardConfigService.DASHBOARD_CALLBACK;
+  private static final String DASHBOARD_BASE_PATH = "/ui";
+  private static final String REDIRECT_URI =
+      BASE_URL + DASHBOARD_BASE_PATH + DashboardConfigService.DASHBOARD_CALLBACK;
+  private static final Set<String> DEV_REDIRECT_URIS =
+      Set.of(REDIRECT_URI, BASE_URL + DashboardConfigService.DASHBOARD_DEV_CALLBACK,
+          BASE_URL + DashboardConfigService.DASHBOARD_DEVCONTAINER_CALLBACK);
 
   private static final Set<String> GRANT_TYPES = Set.of("authorization_code", "refresh_token");
 
@@ -79,12 +85,14 @@ class DashboardConfigServiceTest {
 
   IamSha256PasswordEncoder encoder;
   DashboardConfigService service;
+  MockEnvironment environment;
 
   @BeforeEach
   void setUp() {
     encoder = new IamSha256PasswordEncoder();
+    environment = new MockEnvironment();
     service = new DashboardConfigService(clientService, clientUtils, encoder, eventPublisher,
-        iamProperties);
+        iamProperties, environment);
   }
 
   @Test
@@ -134,7 +142,7 @@ class DashboardConfigServiceTest {
     assertEquals(DashboardConfigService.DASHBOARD_SCOPES.size(), created.getScope().size());
     assertTrue(created.getScope().containsAll(DashboardConfigService.DASHBOARD_SCOPES));
     assertEquals(1, created.getRedirectUris().size());
-    assertTrue(created.getRedirectUris().contains(BASE_URL + DashboardConfigService.DASHBOARD_CALLBACK));
+    assertTrue(created.getRedirectUris().contains(REDIRECT_URI));
     assertFalse(created.isDynamicallyRegistered());
     assertTrue(created.isActive());
     assertExpectedConfiguration(created, CLIENT_SECRET);
@@ -142,6 +150,82 @@ class DashboardConfigServiceTest {
     verify(clientUtils).setupClientDefaults(created);
     verify(clientService, never()).updateClient(any());
     verifyNoInteractions(eventPublisher);
+  }
+
+  @Test
+  void missingClientInDevCreatesAllRedirectUris() {
+    environment.setActiveProfiles("dev");
+    configureDashboard(CLIENT_SECRET);
+    when(clientService.findClientByClientId(CLIENT_ID)).thenReturn(Optional.empty());
+
+    service.ensureDashboardClientConfigured();
+
+    ArgumentCaptor<ClientDetailsEntity> captor = ArgumentCaptor.forClass(ClientDetailsEntity.class);
+    verify(clientService).saveNewClient(captor.capture());
+    assertEquals(DEV_REDIRECT_URIS, captor.getValue().getRedirectUris());
+    verifyNoInteractions(eventPublisher);
+  }
+
+  @Test
+  void enablingDevAddsRedirectUrisToExistingClient() {
+    environment.setActiveProfiles("dev");
+    ClientDetailsEntity client = existingClient(CLIENT_SECRET);
+    String previousHash = client.getClientSecret();
+    configureDashboard(CLIENT_SECRET);
+    mockExistingClientForUpdate(client);
+
+    service.ensureDashboardClientConfigured();
+
+    assertEquals(DEV_REDIRECT_URIS, client.getRedirectUris());
+    assertEquals(previousHash, client.getClientSecret());
+    verify(clientService).updateClient(client);
+    verify(eventPublisher).publishEvent(any(ClientUpdatedEvent.class));
+  }
+
+  @Test
+  void disablingDevRemovesDevelopmentRedirectUris() {
+    ClientDetailsEntity client = existingClient(CLIENT_SECRET);
+    client.setRedirectUris(DEV_REDIRECT_URIS);
+    String previousHash = client.getClientSecret();
+    configureDashboard(CLIENT_SECRET);
+    mockExistingClientForUpdate(client);
+
+    service.ensureDashboardClientConfigured();
+
+    assertEquals(Set.of(REDIRECT_URI), client.getRedirectUris());
+    assertEquals(previousHash, client.getClientSecret());
+    verify(clientService).updateClient(client);
+    verify(eventPublisher).publishEvent(any(ClientUpdatedEvent.class));
+  }
+
+  @Test
+  void unchangedDevConfigurationDoesNotTriggerUpdate() {
+    environment.setActiveProfiles("dev");
+    ClientDetailsEntity client = existingClient(CLIENT_SECRET);
+    client.setRedirectUris(DEV_REDIRECT_URIS);
+    configureDashboard(CLIENT_SECRET);
+    when(clientService.findClientByClientId(CLIENT_ID)).thenReturn(Optional.of(client));
+
+    service.ensureDashboardClientConfigured();
+
+    verify(clientService, never()).updateClient(any());
+    verifyNoInteractions(clientUtils, eventPublisher);
+  }
+
+  @Test
+  void devRedirectDriftAndSecretRotationAreRepairedTogether() {
+    environment.setActiveProfiles("dev");
+    String newSecret = "new-dashboard-secret-01234567890";
+    ClientDetailsEntity client = existingClient(CLIENT_SECRET);
+    configureDashboard(newSecret);
+    mockExistingClientForUpdate(client);
+
+    service.ensureDashboardClientConfigured();
+
+    assertEquals(DEV_REDIRECT_URIS, client.getRedirectUris());
+    assertEquals(encoder.encode(newSecret), client.getClientSecret());
+    verify(clientService).updateClient(client);
+    verify(eventPublisher).publishEvent(any(ClientUpdatedEvent.class));
   }
 
   @Test
@@ -263,6 +347,7 @@ class DashboardConfigServiceTest {
     when(dashboardProperties.isEnabled()).thenReturn(true);
     when(dashboardProperties.getClientId()).thenReturn(CLIENT_ID);
     when(dashboardProperties.getClientSecret()).thenReturn(plainSecret);
+    when(dashboardProperties.getBasePath()).thenReturn(DASHBOARD_BASE_PATH);
     when(iamProperties.getBaseUrl()).thenReturn(BASE_URL);
   }
 

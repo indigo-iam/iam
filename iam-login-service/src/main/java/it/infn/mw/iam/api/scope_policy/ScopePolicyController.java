@@ -178,7 +178,7 @@ public class ScopePolicyController {
     return ErrorDTO.fromString(ex.getMessage());
   }
 
-  @ResponseStatus(value = HttpStatus.BAD_REQUEST)
+  @ResponseStatus(value = HttpStatus.CONFLICT)
   @ExceptionHandler(DuplicateScopePolicyError.class)
   public ErrorDTO duplicatePolicyError(Exception ex) {
     return ErrorDTO.fromString(ex.getMessage());

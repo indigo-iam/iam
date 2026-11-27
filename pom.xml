@@ -80,6 +80,7 @@
     <shedlock-spring.version>4.48.0</shedlock-spring.version>
 
     <nimbus-jose-jwt.version>10.0.2</nimbus-jose-jwt.version>
+    <oauth2-oidc-sdk.version>9.43.3</oauth2-oidc-sdk.version>
 
     <resource.delimiter>@</resource.delimiter>
 
@@ -280,6 +281,12 @@
         <groupId>com.nimbusds</groupId>
         <artifactId>nimbus-jose-jwt</artifactId>
         <version>${nimbus-jose-jwt.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>com.nimbusds</groupId>
+        <artifactId>oauth2-oidc-sdk</artifactId>
+        <version>${oauth2-oidc-sdk.version}</version>
       </dependency>
 
       <dependency>

@@ -25,6 +25,7 @@ import org.springframework.security.oauth2.common.exceptions.InvalidGrantExcepti
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
 import org.springframework.security.oauth2.provider.code.AuthorizationCodeServices;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import it.infn.mw.iam.core.IamAuthenticationHolderService;
 import it.infn.mw.iam.persistence.model.AuthenticationHolderEntity;
@@ -35,6 +36,7 @@ import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
 
 @SuppressWarnings("deprecation")
 @Service
+@Transactional
 public class IamAuthorizationCodeService implements AuthorizationCodeServices {
 
   private static final int AUTHORIZATION_CODE_LENGTH_BYTES = 32;
