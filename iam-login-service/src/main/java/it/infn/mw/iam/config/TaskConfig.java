@@ -41,6 +41,7 @@ import it.infn.mw.iam.config.lifecycle.LifecycleProperties;
 import it.infn.mw.iam.core.gc.GarbageCollector;
 import it.infn.mw.iam.core.lifecycle.ExpiredAccountsHandler;
 import it.infn.mw.iam.core.lifecycle.cern.CernAccountLifecycleTask;
+import it.infn.mw.iam.core.lifecycle.PendingSuspensionNotificationTask;
 import it.infn.mw.iam.core.web.aup.AupReminderTask;
 import it.infn.mw.iam.core.web.wellknown.IamWellKnownInfoProvider;
 import it.infn.mw.iam.notification.NotificationDeliveryTask;
@@ -74,6 +75,7 @@ public class TaskConfig implements SchedulingConfigurer {
   private LifecycleProperties lifecycleProperties;
   private ExpiredAccountsHandler expiredAccountsHandler;
   private final Optional<CernAccountLifecycleTask> cernLifecycleTask;
+  private PendingSuspensionNotificationTask pendingSuspensionNotificationTask;
   private AupReminderTask aupReminderTask;
   private ExecutorService taskScheduler;
   private GarbageCollector garbageCollector;
@@ -97,7 +99,9 @@ public class TaskConfig implements SchedulingConfigurer {
       IamRegistrationRequestRepository registrationRequestRepository,
       RegistrationRequestService registrationRequestService,
       NotificationDeliveryTask deliveryTask, LifecycleProperties lifecycleProperties,
-      ExpiredAccountsHandler expiredAccountsHandler, AupReminderTask aupReminderTask,
+      ExpiredAccountsHandler expiredAccountsHandler,
+      PendingSuspensionNotificationTask pendingSuspensionNotificationTask,
+      AupReminderTask aupReminderTask,
       ExecutorService taskScheduler, GarbageCollector garbageCollector,
       Optional<CernAccountLifecycleTask> cernLifecycleTask) {
 
@@ -107,6 +111,7 @@ public class TaskConfig implements SchedulingConfigurer {
     this.deliveryTask = deliveryTask;
     this.lifecycleProperties = lifecycleProperties;
     this.expiredAccountsHandler = expiredAccountsHandler;
+    this.pendingSuspensionNotificationTask = pendingSuspensionNotificationTask;
     this.aupReminderTask = aupReminderTask;
     this.taskScheduler = taskScheduler;
     this.garbageCollector = garbageCollector;
@@ -198,11 +203,25 @@ public class TaskConfig implements SchedulingConfigurer {
     }
   }
 
+  public void scheduledPendingSuspensionNotificationTask(
+      final ScheduledTaskRegistrar taskRegistrar) {
+    if (!lifecycleProperties.getAccount().getPendingSuspensionNotificationTask().isEnabled()) {
+      LOG.info("Pending suspension notification task is disabled");
+    } else {
+      final String cronSchedule = lifecycleProperties.getAccount()
+        .getPendingSuspensionNotificationTask().getCronSchedule();
+      LOG.info("Scheduling pending suspension notification task with schedule: {}",
+          cronSchedule);
+      taskRegistrar.addCronTask(pendingSuspensionNotificationTask, cronSchedule);
+    }
+  }
+
   @Override
   public void configureTasks(final ScheduledTaskRegistrar taskRegistrar) {
     taskRegistrar.setScheduler(taskScheduler);
     schedulePendingNotificationsDelivery(taskRegistrar);
     scheduledExpiredAccountsTask(taskRegistrar);
+    scheduledPendingSuspensionNotificationTask(taskRegistrar);
     scheduledCleanUpExpireRegistrationTask(taskRegistrar);
   }
 

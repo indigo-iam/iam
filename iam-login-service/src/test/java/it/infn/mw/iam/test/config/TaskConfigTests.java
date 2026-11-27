@@ -43,9 +43,17 @@ import org.springframework.scheduling.config.ScheduledTaskRegistrar;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import it.infn.mw.iam.config.TaskConfig;
+import it.infn.mw.iam.config.lifecycle.LifecycleProperties;
+import it.infn.mw.iam.core.gc.GarbageCollector;
+import it.infn.mw.iam.core.lifecycle.ExpiredAccountsHandler;
+import it.infn.mw.iam.core.lifecycle.PendingSuspensionNotificationTask;
+import it.infn.mw.iam.core.web.aup.AupReminderTask;
+import it.infn.mw.iam.notification.NotificationDeliveryTask;
+import it.infn.mw.iam.notification.service.NotificationStoreService;
 import it.infn.mw.iam.persistence.model.IamRegistrationRequest;
 import it.infn.mw.iam.persistence.repository.IamRegistrationRequestRepository;
 import it.infn.mw.iam.registration.RegistrationRequestService;
+import java.util.concurrent.ExecutorService;
 
 @ExtendWith(MockitoExtension.class)
 class TaskConfigTests {
@@ -53,10 +61,34 @@ class TaskConfigTests {
     private ScheduledTaskRegistrar taskRegistrar;
 
     @Mock
+    private NotificationStoreService notificationStoreService;
+
+    @Mock
     private RegistrationRequestService registrationRequestService;
 
     @Mock
     private IamRegistrationRequestRepository registrationRequestRepository;
+
+    @Mock
+    private NotificationDeliveryTask deliveryTask;
+
+    @Mock
+    private LifecycleProperties lifecycleProperties;
+
+    @Mock
+    private ExpiredAccountsHandler expiredAccountsHandler;
+
+    @Mock
+    private PendingSuspensionNotificationTask pendingSuspensionNotificationTask;
+
+    @Mock
+    private AupReminderTask aupReminderTask;
+
+    @Mock
+    private ExecutorService taskScheduler;
+
+    @Mock
+    private GarbageCollector garbageCollector;
 
     @InjectMocks
     private TaskConfig taskConfig;
@@ -147,5 +179,34 @@ class TaskConfigTests {
         // allow slight time drift
         assertTrue(!actualInstant.isBefore(beforeRun.minusSeconds(2)) &&
                 !actualInstant.isAfter(beforeRun.plusSeconds(2)));
+    }
+
+    @Test
+    void shouldNotSchedulePendingSuspensionNotificationTaskWhenDisabled() {
+
+        LifecycleProperties.AccountLifecycleProperties accountProperties =
+                new LifecycleProperties.AccountLifecycleProperties();
+        accountProperties.getPendingSuspensionNotificationTask().setEnabled(false);
+        when(lifecycleProperties.getAccount()).thenReturn(accountProperties);
+
+        taskConfig.scheduledPendingSuspensionNotificationTask(taskRegistrar);
+
+        verify(taskRegistrar, never())
+                .addCronTask(eq(pendingSuspensionNotificationTask), anyString());
+    }
+
+    @Test
+    void shouldSchedulePendingSuspensionNotificationTaskWhenEnabled() {
+
+        LifecycleProperties.AccountLifecycleProperties accountProperties =
+                new LifecycleProperties.AccountLifecycleProperties();
+        accountProperties.getPendingSuspensionNotificationTask().setEnabled(true);
+        accountProperties.getPendingSuspensionNotificationTask().setCronSchedule("0 0 0 * * *");
+        when(lifecycleProperties.getAccount()).thenReturn(accountProperties);
+
+        taskConfig.scheduledPendingSuspensionNotificationTask(taskRegistrar);
+
+        verify(taskRegistrar, times(1))
+                .addCronTask(eq(pendingSuspensionNotificationTask), eq("0 0 0 * * *"));
     }
 }
