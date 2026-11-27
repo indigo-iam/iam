@@ -319,6 +319,13 @@
       <artifactId>spring-security-saml2-core</artifactId>
     </dependency>
 
+    <!-- Experimental AES-GCM compatibility override. -->
+    <dependency>
+      <groupId>org.apache.santuario</groupId>
+      <artifactId>xmlsec</artifactId>
+      <version>2.3.5</version>
+    </dependency>
+
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-test</artifactId>
