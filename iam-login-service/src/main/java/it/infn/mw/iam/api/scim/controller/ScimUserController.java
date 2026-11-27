@@ -118,7 +118,7 @@ public class ScimUserController extends ScimControllerSupport {
     return wrapper;
   }
 
-  @PreAuthorize("#iam.hasScope('scim:read') or #iam.isUser(#id) or #iam.hasAnyDashboardRole('ROLE_ADMIN', 'ROLE_GM', 'ROLE_READER')")
+  @PreAuthorize("#iam.hasScope('scim:read') or #iam.isUser(#id) or #iam.isGroupManagerOfUser(#id) or #iam.hasAnyDashboardRole('ROLE_ADMIN', 'ROLE_READER')")
   @GetMapping(value = "/{id}", produces = ScimConstants.SCIM_CONTENT_TYPE)
   public ScimUser getUser(@PathVariable final String id) {
 
@@ -172,7 +172,7 @@ public class ScimUserController extends ScimControllerSupport {
     userProvisioningService.delete(id);
   }
 
-  @ResponseStatus(value=HttpStatus.BAD_REQUEST)
+  @ResponseStatus(value = HttpStatus.BAD_REQUEST)
   @ExceptionHandler(HttpMessageNotReadableException.class)
   public String httpMessageNotReadableExceptionHander(HttpServletRequest req, Exception ex) {
     return ex.getMessage();

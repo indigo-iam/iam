@@ -165,6 +165,24 @@ public class IamSecurityExpressionMethods {
   public boolean isClientOwner(String clientId) {
     Optional<IamAccount> owner = accountUtils.getAuthenticatedUserAccount();
     Optional<ClientDetailsEntity> client = clientRepo.findByClientId(clientId);
-    return owner.isPresent() && client.isPresent() && accountClientRepo.findByAccountAndClient(owner.get(), client.get()).isPresent();
+    return owner.isPresent() && client.isPresent()
+        && accountClientRepo.findByAccountAndClient(owner.get(), client.get()).isPresent();
+  }
+
+  public boolean isGroupManagerOfUser(String userUuid) {
+    if (!isRequestWithoutToken()) {
+      return false;
+    }
+
+    Optional<IamAccount> user = accountUtils.getByAccountId(userUuid);
+
+    if (user.isEmpty()) {
+      return false;
+    }
+
+    return user.get()
+      .getGroups()
+      .stream()
+      .anyMatch(group -> isGroupManager(group.getGroup().getUuid()));
   }
 }
