@@ -16,6 +16,7 @@
 package it.infn.mw.iam.test.api.client;
 
 import static java.lang.String.format;
+import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -463,7 +464,8 @@ class ClientRegistrationAPIIntegrationTests implements StructuredScopeTestSuppor
         .header(HttpHeaders.AUTHORIZATION, "Bearer " + created.getRegistrationAccessToken())
         .contentType(APPLICATION_JSON)
         .content(mapper.writeValueAsString(payload.put("client_id", updatedClientId))))
-      .andExpect(status().isOk());
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.client_id", is(clientId)));
 
     ClientDetailsEntity updated = clientRepository.findByClientId(clientId).orElseThrow();
 
