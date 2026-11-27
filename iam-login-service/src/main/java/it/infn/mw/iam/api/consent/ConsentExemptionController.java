@@ -36,15 +36,19 @@ import org.springframework.web.bind.annotation.RestController;
 import it.infn.mw.iam.api.common.ErrorDTO;
 import it.infn.mw.iam.core.oauth.consent.ConsentExemptionService;
 import it.infn.mw.iam.persistence.model.ConsentExemption;
+import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
 
 @RestController
 @RequestMapping("/api/whitelist")
 public class ConsentExemptionController {
 
   private final ConsentExemptionService exemptionService;
+  private final IamClientRepository clientRepository;
 
-  public ConsentExemptionController(ConsentExemptionService exceptionService) {
+  public ConsentExemptionController(ConsentExemptionService exceptionService,
+      IamClientRepository clientRepository) {
     this.exemptionService = exceptionService;
+    this.clientRepository = clientRepository;
   }
 
   @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
@@ -57,7 +61,12 @@ public class ConsentExemptionController {
   @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE,
       produces = MediaType.APPLICATION_JSON_VALUE)
   @PreAuthorize("#iam.hasScope('iam:admin.write') or #iam.hasDashboardRole('ROLE_ADMIN')")
-  public ConsentExemptionDTO addNewConsentExemption(@RequestBody ConsentExemptionDTO dto, Authentication auth) {
+  public ConsentExemptionDTO addNewConsentExemption(@RequestBody ConsentExemptionDTO dto,
+      Authentication auth) {
+
+    clientRepository.findByClientId(dto.clientId())
+      .orElseThrow(() -> new EntityNotFoundException(
+          "Client with clientId " + dto.clientId() + " not found."));
 
     ConsentExemption whitelist = new ConsentExemption();
     whitelist.setClientId(dto.clientId());
@@ -78,9 +87,9 @@ public class ConsentExemptionController {
   @PreAuthorize("#iam.hasScope('iam:admin.read') or #iam.hasDashboardRole('ROLE_ADMIN')")
   public ConsentExemptionDTO getConsentExemptionById(@PathVariable Long id) {
     ConsentExemption whitelist = exemptionService.findById(id)
-        .orElseThrow(
-            () -> new EntityNotFoundException("Consent exemption with id " + id + " not found."));
-      return ConsentExemptionDTO.from(whitelist);
+      .orElseThrow(
+          () -> new EntityNotFoundException("Consent exemption with id " + id + " not found."));
+    return ConsentExemptionDTO.from(whitelist);
   }
 
   @ResponseStatus(code = HttpStatus.NOT_FOUND)
