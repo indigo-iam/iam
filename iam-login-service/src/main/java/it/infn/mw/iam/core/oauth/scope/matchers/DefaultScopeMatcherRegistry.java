@@ -23,8 +23,8 @@ import org.springframework.security.oauth2.provider.ClientDetails;
 
 import com.google.common.collect.Sets;
 
+import it.infn.mw.iam.core.oauth.scope.IamSystemScopeService;
 import it.infn.mw.iam.persistence.model.SystemScope;
-import it.infn.mw.iam.persistence.repository.IamScopeRepository;
 
 @SuppressWarnings("deprecation")
 public class DefaultScopeMatcherRegistry implements ScopeMatcherRegistry {
@@ -33,11 +33,11 @@ public class DefaultScopeMatcherRegistry implements ScopeMatcherRegistry {
 
   private final Set<ScopeMatcher> customMatchers;
 
-  private final IamScopeRepository scopeRepo;
+  private final IamSystemScopeService scopeService;
 
-  public DefaultScopeMatcherRegistry(Set<ScopeMatcher> customMatchers, IamScopeRepository scopeRepo) {
+  public DefaultScopeMatcherRegistry(Set<ScopeMatcher> customMatchers, IamSystemScopeService scopeService) {
     this.customMatchers = customMatchers;
-    this.scopeRepo = scopeRepo;
+    this.scopeService = scopeService;
   }
 
   @Override
@@ -56,7 +56,7 @@ public class DefaultScopeMatcherRegistry implements ScopeMatcherRegistry {
   @Override
   public ScopeMatcher findMatcherForScope(String scope) {
 
-    List<SystemScope> systemScopes = scopeRepo.findAll();
+    List<SystemScope> systemScopes = scopeService.getAllUnSorted();
 
     return customMatchers.stream()
       .filter(s -> systemScopes.toString().contains(scope))
