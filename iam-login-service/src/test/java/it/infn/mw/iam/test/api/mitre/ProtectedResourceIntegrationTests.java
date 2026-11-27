@@ -157,6 +157,7 @@ class ProtectedResourceIntegrationTests {
 
     clientJson = new JsonObject();
     clientJson.addProperty("client_name", NAME);
+    clientJson.addProperty("client_id", "different-client-id");
     clientJson.addProperty("scope", "openid email");
     clientJson.addProperty("token_endpoint_auth_method", "none");
 

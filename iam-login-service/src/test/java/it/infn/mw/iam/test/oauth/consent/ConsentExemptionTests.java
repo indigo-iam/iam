@@ -16,6 +16,8 @@
 package it.infn.mw.iam.test.oauth.consent;
 
 import static org.hamcrest.Matchers.equalTo;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.http.MediaType.APPLICATION_FORM_URLENCODED;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.httpBasic;
@@ -28,6 +30,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import java.util.Set;
 
+import javax.persistence.EntityManager;
+import javax.persistence.PersistenceContext;
+
 import org.assertj.core.util.Sets;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -35,15 +40,20 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.mock.web.MockHttpSession;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
 import it.infn.mw.iam.IamLoginService;
+import it.infn.mw.iam.core.client.IamSha256PasswordEncoder;
 import it.infn.mw.iam.core.oauth.consent.ConsentExemptionService;
+import it.infn.mw.iam.persistence.model.ClientAuthMethod;
+import it.infn.mw.iam.persistence.model.ClientDetailsEntity;
 import it.infn.mw.iam.persistence.model.ConsentExemption;
 import it.infn.mw.iam.persistence.repository.IamConsentExemptionRepository;
+import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
 import it.infn.mw.iam.test.oauth.EndpointsTestUtils;
 
 @SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.MOCK,
@@ -52,11 +62,20 @@ import it.infn.mw.iam.test.oauth.EndpointsTestUtils;
 @Transactional
 class ConsentExemptionTests extends EndpointsTestUtils {
 
+  @PersistenceContext
+  EntityManager entityManager;
+
+  @Autowired
+  JdbcTemplate jdbcTemplate;
+
   @Autowired
   ConsentExemptionService exemptionService;
 
   @Autowired
   IamConsentExemptionRepository exemptionRepository;
+
+  @Autowired
+  IamClientRepository clientRepo;
 
   protected ConsentExemption getConsentExemptionFor(String creator, String clientId,
       Set<String> scopes) {
@@ -131,7 +150,67 @@ class ConsentExemptionTests extends EndpointsTestUtils {
       .andExpect(view().name("deviceApproved"));
 
     exemptionService.remove(ws);
-
   }
 
+  @Test
+  void shouldDeleteConsentExemptionAndScopesWhenClientIsDeleted() {
+
+    ClientDetailsEntity client = new ClientDetailsEntity();
+    client.setClientId("new-client");
+    client.setScope(Set.of("openid"));
+    client.setGrantTypes(Set.of());
+    client.setTokenEndpointAuthMethod(ClientAuthMethod.SECRET_BASIC);
+
+    String hashedClientSecret = new IamSha256PasswordEncoder().encode("secret");
+    client.setClientSecret(hashedClientSecret);
+
+    clientRepo.saveAndFlush(client);
+
+    String clientId = client.getClientId();
+
+    ConsentExemption exemption = getConsentExemptionFor(ADMIN_USERNAME, client.getClientId(),
+        Sets.newLinkedHashSet("openid", "profile"));
+
+    Long exemptionId = exemptionRepository.saveAndFlush(exemption).getId();
+
+    clientRepo.delete(client);
+    clientRepo.flush();
+
+    entityManager.clear();
+
+    assertTrue(clientRepo.findByClientId(clientId).isEmpty());
+    assertTrue(exemptionRepository.findById(exemptionId).isEmpty());
+
+    Integer remainingScopes = jdbcTemplate.queryForObject("""
+        SELECT COUNT(*)
+        FROM whitelisted_site_scope
+        WHERE owner_id = ?
+        """, Integer.class, exemptionId);
+
+    assertEquals(0, remainingScopes);
+  }
+
+  @Test
+  void shouldRemoveOrphanedConsentExemptions() {
+
+    Integer orphanedExemptions = jdbcTemplate.queryForObject("""
+        SELECT COUNT(*)
+        FROM whitelisted_site
+        WHERE client_id = ?
+        """, Integer.class, "orphan-client");
+
+    assertEquals(0, orphanedExemptions);
+  }
+
+  @Test
+  void shouldRemoveOrphanedScopes() {
+
+    Integer orphanedScopes = jdbcTemplate.queryForObject("""
+        SELECT COUNT(*)
+        FROM whitelisted_site_scope
+        WHERE owner_id = ?
+        """, Integer.class, 999999L);
+
+    assertEquals(0, orphanedScopes);
+  }
 }
